@@ -312,7 +312,7 @@ dialog .db{max-height:70vh}
       </table>
       <div class="empty" id="empty" hidden></div>
     </div>
-    <p class="muted" style="font-size:12.5px;margin:10px 0 30px">Δ = |ผล Re-test − Original| ÷ Original · สีแดงเมื่อเกิน <span id="thLbl">5</span>% · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 30px">แสดงเฉพาะงานที่ยังไม่ปิด · งานที่ปิดแล้วดูได้ที่การ์ด “ปิดงาน” · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
   </section>
 
   <section id="vSummary" hidden>
@@ -554,7 +554,7 @@ async function loadOptions(){
 function fill(sel,all,list){ const v=sel.value; sel.innerHTML=`<option value="">${all}</option>`+list.map(x=>`<option>${esc(x)}</option>`).join(""); sel.value=v; }
 async function loadYear(){ yearRows = await api(`/retests?year=${year}`); renderAll(); }
 async function boot(){
-  $("#thLbl").textContent = cfg.th;
+  
   renderSheets();
   if(!base()){ conn("err","ยังไม่ได้ตั้งค่า Worker"); renderAll(); showEmpty("หน้าเว็บนี้ยังไม่ได้เชื่อมกับ Worker — กด “ตั้งค่า” แล้วใส่ Worker URL (เช่น https://lab-retest.xxx.workers.dev)"); return; }
   try{ await loadOptions(); await loadYear(); conn("ok","เชื่อมต่อแล้ว"); }
@@ -641,8 +641,10 @@ function showEmpty(msg){ $("#rows").innerHTML=""; $("#selBar").hidden=true; cons
 function renderAll(){ renderSheets(); renderList(); if(view==="summary") renderSummary(); }
 function renderList(){
   const all = filtered(); renderTrack(all);
-  const list = fStatus ? all.filter(r=>r.status===fStatus) : all;
-  $("#count").textContent = `${list.length} รายการ${fStatus?" · "+STATUS[SI[fStatus]].t:""}`;
+  const list = visibleRows();   // ไม่เลือกการ์ด = แสดงเฉพาะงานที่ยังไม่ปิด
+  const nClosed = all.filter(r=>r.status==="closed").length;
+  $("#count").textContent = fStatus ? `${list.length} รายการ · ${STATUS[SI[fStatus]].t}` : `ค้าง ${list.length} รายการ${nClosed?` · ปิดแล้ว ${nClosed} (กดการ์ด “ปิดงาน” เพื่อดู)`:""}`;
+  if(!list.length && !fStatus && nClosed && nClosed===all.length){ showEmpty(`ไม่มีงานค้างใน${MONTHS_FULL[month-1]} ✓ ปิดงานครบแล้ว ${nClosed} รายการ (กดการ์ด “ปิดงาน” เพื่อดู)`); return; }
   if(!list.length){ showEmpty(monthRows().length ? "ไม่มีรายการที่ตรงกับตัวกรอง" : `ยังไม่มีรายการ Re-test ใน${MONTHS_FULL[month-1]} ${year} · กด “เพิ่มรายการ” เพื่อเริ่มบันทึก`); return; }
   $("#empty").hidden = true;
   setTimeout(updSel);
@@ -651,9 +653,8 @@ function renderList(){
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
     const resHtml = res.length ? res.map(x=>{
-      const ob = origFor(origOf(k=>r[k]), x.m), d = ob ? delta(ob.v, x.v) : null;
       return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` ครั้งที่ ${x.round}`:""}</span>`:""}
-        <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span>${d!==null?`<span class="delta ${d>cfg.th?"hi":""}" title="เทียบกับ Original ${ob.m}">Δ ${d.toFixed(1)}%${ob.cross?` (เทียบ ${ob.m})`:""}</span>`:""}</div>`;
+        <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
     }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"อยู่ในห้องปฏิบัติการ…":"ยังไม่ระบุวิธี"}</span>`;
     return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}">
       <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)}"></td>
@@ -904,7 +905,7 @@ $("#statusPick").addEventListener("click",e=>{ const b=e.target.closest("button"
 $("#dDelete").onclick=()=>askDelete([editing.id]);
 /* ---------- ลบรายการ (ทีละรายการ / หลายรายการ) */
 let toDelete=[];
-function visibleRows(){ const all=filtered(); return fStatus ? all.filter(r=>r.status===fStatus) : all; }
+function visibleRows(){ const all=filtered(); return fStatus ? all.filter(r=>r.status===fStatus) : all.filter(r=>r.status!=="closed"); }
 function updSel(){
   const vis=visibleRows(); const n=vis.filter(r=>picked.has(r.id)).length;
   $("#selBar").hidden = !n; $("#selN").textContent = `${n} รายการ`;
