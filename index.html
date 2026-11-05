@@ -10,23 +10,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --bg:#EDF1F2; --panel:#FFFFFF; --ink:#18262E; --muted:#5B6B73; --line:#D3DCDF; --soft:#F5F8F9;
+  --bg:#EAF4FE; --panel:#FFFFFF; --ink:#16263A; --muted:#566A7E; --line:#D7E5F3; --soft:#F4F9FF;
   --teal:#0E7C7B; --teal-ink:#FFFFFF;
-  --s-check:#7A8790; --s-lab:#C0820C; --s-result:#6B4FB3; --s-closed:#3F7D4E;
+  --s-check:#C8692A; --s-lab:#A07C0C; --s-result:#2F6FBF; --s-closed:#2F8A4E;
+  --p-check:#F7B98B; --p-lab:#F3D77A; --p-result:#9CC7F2; --p-closed:#9FD8B0;
+  --icl:#34414F; --paper:#F6F3EE; --glass:#E9EEF3; --grey:#C3CBD4; --coral:#F4A0A0; --mint:#9FD9C9;
   --bad:#B4362F; --good:#3F7D4E; --na:#A9B5BB;
   --wc:#1F6FA8; --nir:#8A5A14;
   --radius:10px;
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
-  --bg:#0F181C; --panel:#162227; --ink:#E3ECEE; --muted:#93A4AB; --line:#2A3A41; --soft:#1B2A30;
+  --bg:#0B1A2E; --panel:#13243A; --ink:#E3ECF5; --muted:#93A7BC; --line:#26405C; --soft:#182C45;
   --teal:#3FB3B1; --teal-ink:#06201F;
-  --s-check:#9AA8B0; --s-lab:#E3A63A; --s-result:#A58CEB; --s-closed:#6DBB80;
+  --s-check:#F2A56C; --s-lab:#EBC95A; --s-result:#86B9EE; --s-closed:#86CF9C;
+  --p-check:#E9A271; --p-lab:#E5C866; --p-result:#86B4E4; --p-closed:#8BC79C;
+  --icl:#0E1C2E; --paper:#E9E4DC; --glass:#C9D3DE; --grey:#9AA6B3; --coral:#E79090; --mint:#8CC8B8;
   --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
 }}
 :root[data-theme="dark"]{
-  --bg:#0F181C; --panel:#162227; --ink:#E3ECEE; --muted:#93A4AB; --line:#2A3A41; --soft:#1B2A30;
+  --bg:#0B1A2E; --panel:#13243A; --ink:#E3ECF5; --muted:#93A7BC; --line:#26405C; --soft:#182C45;
   --teal:#3FB3B1; --teal-ink:#06201F;
-  --s-check:#9AA8B0; --s-lab:#E3A63A; --s-result:#A58CEB; --s-closed:#6DBB80;
+  --s-check:#F2A56C; --s-lab:#EBC95A; --s-result:#86B9EE; --s-closed:#86CF9C;
+  --p-check:#E9A271; --p-lab:#E5C866; --p-result:#86B4E4; --p-closed:#8BC79C;
+  --icl:#0E1C2E; --paper:#E9E4DC; --glass:#C9D3DE; --grey:#9AA6B3; --coral:#E79090; --mint:#8CC8B8;
   --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
 }
 *{box-sizing:border-box}
@@ -43,7 +49,7 @@ header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 
 header.top h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
 header.top .sub{color:var(--muted);font-size:13px}
 .conn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
-.conn i{width:8px;height:8px;border-radius:50%;background:var(--s-check)}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .conn.ok i{background:var(--good)} .conn.err i{background:var(--bad)}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 13px;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:var(--muted)}
@@ -75,20 +81,20 @@ select.user,select.year{border:1px solid var(--line);background:var(--panel);bor
 .track{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0 16px}
 .stage{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:196px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);text-align:left;cursor:pointer;overflow:hidden;
   transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,border-color .2s}
-.stage::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;background:radial-gradient(circle at 72% 30%,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 62%)}
+.stage::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;background:radial-gradient(circle at 72% 30%,color-mix(in srgb,var(--cp) 55%,transparent) 0%,transparent 62%)}
 .stage .ix{position:absolute;top:14px;left:16px;font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.04em}
-.stage .ico{position:absolute;top:14px;right:14px;width:78px;height:78px;color:var(--c);transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
+.stage .ico{position:absolute;top:14px;right:14px;width:78px;height:78px;transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
 .stage .ico svg{width:100%;height:100%}
 .stage .body{position:relative;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(6px)}
-.stage .tag{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:20px;color:var(--c);background:color-mix(in srgb,var(--c) 13%,var(--panel))}
+.stage .tag{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:20px;color:var(--c);background:color-mix(in srgb,var(--cp) 35%,var(--panel))}
 .stage .row{display:flex;align-items:baseline;gap:8px;margin-top:6px}
 .stage .n{font-size:34px;font-weight:700;line-height:1;color:var(--ink)}
 .stage .d{font-size:13px;color:var(--muted);line-height:1.35}
-.stage:hover{transform:translateY(-6px);box-shadow:0 16px 28px -12px color-mix(in srgb,var(--c) 45%,transparent)}
+.stage:hover{transform:translateY(-6px);box-shadow:0 16px 28px -12px color-mix(in srgb,var(--cp) 80%,transparent)}
 .stage:hover .ico{transform:scale(1.18) translateY(-6px) rotate(-4deg)}
-.stage[aria-pressed="true"]{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.stage[aria-pressed="true"]{border-color:var(--cp);box-shadow:0 0 0 2px var(--cp) inset}
 .stage[aria-pressed="true"]::before{opacity:.9}
-.st-check{--c:var(--s-check)} .st-lab{--c:var(--s-lab)} .st-result{--c:var(--s-result)} .st-closed{--c:var(--s-closed)}
+.st-check{--c:var(--s-check);--cp:var(--p-check)} .st-lab{--c:var(--s-lab);--cp:var(--p-lab)} .st-result{--c:var(--s-result);--cp:var(--p-result)} .st-closed{--c:var(--s-closed);--cp:var(--p-closed)}
 
 .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 .filters input,.filters select{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 10px;min-width:0}
@@ -435,6 +441,8 @@ const store = {
   get(k,d){ try{ const v=localStorage.getItem("rt_"+k); return v===null?d:v }catch{ return d } },
   set(k,v){ try{ localStorage.setItem("rt_"+k,v) }catch{} }
 };
+// ถ้าวางหน้าเว็บไว้ที่อื่น (เช่น GitHub Pages) ใส่ลิงก์ Worker ตรงนี้ครั้งเดียว ทุกเครื่องจะใช้ได้ทันที
+const WORKER_URL = "https://retestresult.imguy2727.workers.dev";   // เช่น "https://lab-retest.your-name.workers.dev"
 let cfg = { api:store.get("api",""), tok:store.get("tok",""), th:+store.get("th",5), late:+store.get("late",3), theme:store.get("theme","") };
 let opts = {requester:[], test_item:[], comparison:["Consistent","Inconsistent","Pending"], root_cause:[]};
 const NOW = new Date();
@@ -445,14 +453,20 @@ let yearRows = [], fStatus = "", editing = null, formStatus = "check", labInfo =
 function applyTheme(){ if(cfg.theme) document.documentElement.dataset.theme=cfg.theme; else delete document.documentElement.dataset.theme; }
 applyTheme();
 
-function base(){ if(cfg.api) return cfg.api.replace(/\/+$/,""); return location.protocol.startsWith("http") ? location.origin : ""; }
+const STATIC_HOST = /(\.github\.io|\.pages\.dev|netlify\.app|vercel\.app)$/i.test(location.hostname);
+function base(){
+  const u = cfg.api || WORKER_URL; if(u) return u.replace(/\/+$/,"");
+  return location.protocol.startsWith("http") && !STATIC_HOST ? location.origin : "";  // GitHub Pages ไม่มี API ในตัว
+}
 async function api(path, opt={}){
   const b = base(); if(!b) throw new Error("ยังไม่ได้ตั้งค่า Worker URL");
   const headers = {"Content-Type":"application/json"};
   if(cfg.tok) headers.Authorization = "Bearer "+cfg.tok;
   const me = $("#me").value; if(me) headers["X-User"] = encodeURIComponent(me);
   const r = await fetch(b+"/api"+path, {...opt, headers});
+  const isJson = (r.headers.get("content-type")||"").includes("json");
   const data = await r.json().catch(()=>({}));
+  if(!isJson && (r.status===404 || r.ok)) throw new Error(`ไม่พบ Worker ที่ ${b} — กด “ตั้งค่า” แล้วใส่ Worker URL ให้ถูกต้อง`);
   if(!r.ok) throw new Error(r.status===401 ? "ต้องใส่ API token ที่ถูกต้องในหน้าตั้งค่า" : (data.error || ("HTTP "+r.status)));
   return data;
 }
@@ -514,7 +528,7 @@ async function loadYear(){ yearRows = await api(`/retests?year=${year}`); render
 async function boot(){
   $("#thLbl").textContent = cfg.th;
   renderSheets();
-  if(!base()){ conn("err","ยังไม่ได้ตั้งค่า Worker"); renderAll(); showEmpty("ตั้งค่า Worker URL ในเมนู “ตั้งค่า” เพื่อเริ่มใช้งาน"); return; }
+  if(!base()){ conn("err","ยังไม่ได้ตั้งค่า Worker"); renderAll(); showEmpty("หน้าเว็บนี้ยังไม่ได้เชื่อมกับ Worker — กด “ตั้งค่า” แล้วใส่ Worker URL (เช่น https://lab-retest.xxx.workers.dev)"); return; }
   try{ await loadOptions(); await loadYear(); conn("ok","เชื่อมต่อแล้ว"); }
   catch(e){ conn("err","เชื่อมต่อไม่ได้"); renderAll(); showEmpty(e.message); }
 }
@@ -549,11 +563,43 @@ function filtered(){
     return true;
   });
 }
+// ไอคอนสไตล์ flat: เส้นขอบเข้ม + สีพาสเทล ใช้ธีมเดียวกันทั้ง 4 ขั้น
 const ICONS = {
-  check:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="10" width="30" height="42" rx="4"/><path d="M22 10v-2h14v2"/><path d="M21 24h16M21 32h10"/><circle cx="42" cy="42" r="9" fill="var(--panel)"/><path d="M48.5 48.5L55 55"/><path d="M38.5 42l2.5 2.5 4.5-5"/></svg>`,
-  lab:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M25 8h14M27 8v16L13 50a4 4 0 0 0 3.5 6h31a4 4 0 0 0 3.5-6L37 24V8"/><path d="M18 42h28" /><circle cx="27" cy="48" r="2" fill="currentColor"/><circle cx="36" cy="46" r="1.6" fill="currentColor"/><path d="M46 14c3 0 3 4 6 4" opacity=".6"/></svg>`,
-  result:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="10" width="44" height="44" rx="6"/><path d="M20 44V34M30 44V24M40 44V30"/><path d="M18 50h28" opacity=".5"/><circle cx="46" cy="18" r="3" fill="currentColor"/></svg>`,
-  closed:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M32 6l6 5 8-1 2 8 7 4-3 7 3 7-7 4-2 8-8-1-6 5-6-5-8 1-2-8-7-4 3-7-3-7 7-4 2-8 8 1z"/><path d="M23 32l6 6 12-13"/></svg>`,
+  check:`<svg viewBox="0 0 64 64" fill="none" stroke="var(--icl)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M13 14h30v40H17a4 4 0 0 1-4-4z" fill="var(--paper)"/>
+    <rect x="11" y="8" width="34" height="9" rx="4.5" fill="var(--p-check)"/>
+    <path d="M19 25h18M19 31h18M19 37h12M19 46h7"/>
+    <g transform="rotate(38 46 38)">
+      <rect x="42" y="16" width="9" height="26" rx="2" fill="var(--p-check)"/>
+      <rect x="42" y="13" width="9" height="6" rx="2" fill="var(--grey)"/>
+      <path d="M42 42h9l-4.5 8z" fill="var(--paper)"/>
+      <path d="M45 21v15" stroke="#fff" stroke-width="1.6" opacity=".8"/>
+    </g></svg>`,
+  lab:`<svg viewBox="0 0 64 64" fill="none" stroke="var(--icl)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="36" y="9" width="12" height="5" rx="2" fill="var(--grey)"/>
+    <path d="M38 14v9.5a17 17 0 1 0 8 0V14z" fill="var(--glass)"/>
+    <path d="M26.2 38h31.6a16 16 0 0 1-31.6 0z" fill="var(--p-result)"/>
+    <circle cx="37" cy="44" r="3.2" fill="var(--coral)" stroke-width="2"/><circle cx="47" cy="47" r="2.2" fill="var(--coral)" stroke-width="2"/><circle cx="45" cy="41" r="1.6" fill="var(--coral)" stroke-width="1.6"/>
+    <rect x="9" y="9" width="18" height="6" rx="2.5" fill="var(--grey)"/>
+    <path d="M11.5 15v32a6.5 6.5 0 0 0 13 0V15z" fill="var(--glass)"/>
+    <path d="M14.5 29v18a3.5 3.5 0 0 0 7 0V29z" fill="var(--p-lab)" stroke-width="2"/>
+    <circle cx="18" cy="35" r="1.8" fill="var(--paper)" stroke-width="1.4"/><circle cx="19.4" cy="42" r="1.3" fill="var(--paper)" stroke-width="1.2"/>
+    </svg>`,
+  result:`<svg viewBox="0 0 64 64" fill="none" stroke="var(--icl)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="9"  y="38" width="9" height="17" rx="2.5" fill="var(--mint)"/>
+    <rect x="21" y="30" width="9" height="25" rx="2.5" fill="var(--p-check)"/>
+    <rect x="33" y="36" width="9" height="19" rx="2.5" fill="var(--p-result)"/>
+    <rect x="45" y="27" width="9" height="28" rx="2.5" fill="var(--p-lab)"/>
+    <path d="M9 27l13-10 10 9 16-15" stroke-width="8"/>
+    <path d="M9 27l13-10 10 9 16-15" stroke="var(--coral)" stroke-width="3.6"/>
+    <path d="M42 8h13v13z" fill="var(--coral)"/>
+    </svg>`,
+  closed:`<svg viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="33" r="22" fill="var(--glass)" stroke="none" opacity=".7"/>
+    <path d="M47 15.5A23 23 0 1 0 55 33" stroke="var(--icl)" stroke-width="5"/>
+    <path d="M19 33l10 10 24-27" stroke="var(--icl)" stroke-width="10"/>
+    <path d="M19 33l10 10 24-27" stroke="var(--p-closed)" stroke-width="5.4"/>
+    </svg>`,
 };
 function renderTrack(list){
   const c = Object.fromEntries(STATUS.map(s=>[s.k,0])); list.forEach(r=>c[r.status]=(c[r.status]||0)+1);
