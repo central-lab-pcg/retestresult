@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ติดตามผล Re-test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#EDF1F2; --panel:#FFFFFF; --ink:#18262E; --muted:#5B6B73; --line:#D3DCDF; --soft:#F5F8F9;
+  --teal:#0E7C7B; --teal-ink:#FFFFFF;
+  --s-check:#7A8790; --s-lab:#C0820C; --s-result:#6B4FB3; --s-closed:#3F7D4E;
+  --bad:#B4362F; --good:#3F7D4E; --na:#A9B5BB;
+  --wc:#1F6FA8; --nir:#8A5A14;
+  --radius:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0F181C; --panel:#162227; --ink:#E3ECEE; --muted:#93A4AB; --line:#2A3A41; --soft:#1B2A30;
+  --teal:#3FB3B1; --teal-ink:#06201F;
+  --s-check:#9AA8B0; --s-lab:#E3A63A; --s-result:#A58CEB; --s-closed:#6DBB80;
+  --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F181C; --panel:#162227; --ink:#E3ECEE; --muted:#93A4AB; --line:#2A3A41; --soft:#1B2A30;
+  --teal:#3FB3B1; --teal-ink:#06201F;
+  --s-check:#9AA8B0; --s-lab:#E3A63A; --s-result:#A58CEB; --s-closed:#6DBB80;
+  --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 "IBM Plex Sans Thai",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.wrap{max-width:1320px;margin:0 auto;padding:0 20px}
+.grow{flex:1}
+.muted{color:var(--muted)}
+
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 6px}
+header.top h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+header.top .sub{color:var(--muted);font-size:13px}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--s-check)}
+.conn.ok i{background:var(--good)} .conn.err i{background:var(--bad)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 13px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:var(--teal-ink);font-weight:600}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:4px 10px;font-size:13px}
+select.user,select.year{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 10px}
+
+/* month sheets — like workbook tabs */
+.sheets{display:flex;align-items:flex-end;gap:2px;margin-top:14px;border-bottom:2px solid var(--teal);overflow-x:auto;scrollbar-width:thin}
+.sheets select.year{margin:0 8px 6px 0;flex:none}
+.sheet{flex:none;border:1px solid var(--line);border-bottom:0;background:var(--soft);border-radius:8px 8px 0 0;padding:6px 14px 5px;cursor:pointer;color:var(--muted);display:flex;gap:6px;align-items:baseline}
+.sheet b{font-weight:600;color:var(--ink)}
+.sheet small{font-size:12px}
+.sheet.now b::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--teal);margin-left:5px;vertical-align:middle}
+.sheet[aria-selected="true"]{background:var(--teal);border-color:var(--teal);color:var(--teal-ink)}
+.sheet[aria-selected="true"] b{color:var(--teal-ink)}
+.sheet[aria-selected="true"].now b::after{background:var(--teal-ink)}
+.sheet.zero{opacity:.6}
+
+.viewbar{display:flex;align-items:center;gap:10px;margin:14px 0 0;flex-wrap:wrap}
+.viewbar h2{margin:0;font-size:19px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;padding:6px 14px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);font-weight:600}
+
+/* pipeline */
+/* status cards — animated feature-card style */
+.track{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0 16px}
+.stage{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:196px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);text-align:left;cursor:pointer;overflow:hidden;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,border-color .2s}
+.stage::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;background:radial-gradient(circle at 72% 30%,color-mix(in srgb,var(--c) 30%,transparent) 0%,transparent 62%)}
+.stage .ix{position:absolute;top:14px;left:16px;font-size:15px;font-weight:700;color:var(--muted);letter-spacing:.04em}
+.stage .ico{position:absolute;top:14px;right:14px;width:78px;height:78px;color:var(--c);transition:transform .45s cubic-bezier(.34,1.56,.64,1)}
+.stage .ico svg{width:100%;height:100%}
+.stage .body{position:relative;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(6px)}
+.stage .tag{display:inline-block;font-size:12.5px;font-weight:700;padding:2px 10px;border-radius:20px;color:var(--c);background:color-mix(in srgb,var(--c) 13%,var(--panel))}
+.stage .row{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.stage .n{font-size:34px;font-weight:700;line-height:1;color:var(--ink)}
+.stage .d{font-size:13px;color:var(--muted);line-height:1.35}
+.stage:hover{transform:translateY(-6px);box-shadow:0 16px 28px -12px color-mix(in srgb,var(--c) 45%,transparent)}
+.stage:hover .ico{transform:scale(1.18) translateY(-6px) rotate(-4deg)}
+.stage[aria-pressed="true"]{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.stage[aria-pressed="true"]::before{opacity:.9}
+.st-check{--c:var(--s-check)} .st-lab{--c:var(--s-lab)} .st-result{--c:var(--s-result)} .st-closed{--c:var(--s-closed)}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.filters input,.filters select{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 10px;min-width:0}
+.filters input[type=search]{flex:1 1 220px}
+.count{color:var(--muted);font-size:13px;margin-left:auto}
+
+.tbl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--soft);position:sticky;top:0;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--soft)}
+tbody tr:last-child td{border-bottom:0}
+td.num{text-align:right;white-space:nowrap}
+.lab{font-weight:600}
+.round{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+.sm-note{font-size:12px;color:var(--muted)}
+.age{font-size:12px;color:var(--muted)} .age.late{color:var(--bad);font-weight:600}
+.res{display:flex;flex-direction:column;gap:3px}
+.mres{display:flex;align-items:baseline;gap:6px;white-space:nowrap}
+.mtag{font-size:12.5px;font-weight:700;padding:0 6px;border-radius:4px;border:1px solid currentColor}
+.mtag.WC{color:var(--wc)} .mtag.NIR{color:var(--nir)}
+.mres .v{font-weight:700;font-size:17px;letter-spacing:.01em}
+.mres{gap:8px}
+.delta{font-size:13px;color:var(--muted)} .delta.hi{color:var(--bad);font-weight:600}
+.cmp{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:20px;border:1px solid currentColor;white-space:nowrap}
+.cmp.Consistent{color:var(--good)} .cmp.Inconsistent{color:var(--bad)} .cmp.Pending{color:var(--muted)}
+.rc{font-size:13.5px;color:var(--ink);max-width:200px;white-space:normal;margin-top:3px}
+.prog{display:flex;align-items:center;gap:8px;white-space:nowrap}
+.ticks{display:flex;gap:3px}
+.ticks b{width:14px;height:6px;border-radius:2px;background:var(--line)}
+.ticks b.on{background:var(--c)}
+.prog .lbl{font-size:13px;font-weight:600;color:var(--c)}
+.adv{border:1px solid var(--line);background:none;border-radius:6px;padding:1px 8px;font-size:12.5px;cursor:pointer;color:var(--ink);white-space:nowrap}
+.adv:hover{border-color:var(--c);color:var(--c)}
+.empty{padding:48px 20px;text-align:center;color:var(--muted)}
+
+/* summary */
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:12px 0 30px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.card.wide{grid-column:1/-1}
+.card h3{margin:0;font-size:15.5px}
+.card .cap{margin:2px 0 12px;font-size:13px;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);margin-top:12px}
+.kpi{padding:12px 16px;border-right:1px solid var(--line)} .kpi:last-child{border-right:0}
+.kpi .v{font-size:24px;font-weight:700;line-height:1.2}
+.kpi .l{font-size:12.5px;color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-bottom:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;background:var(--c)}
+svg.chart{display:block;width:100%;height:auto;overflow:visible}
+svg.chart text{fill:var(--muted);font-size:13px;font-family:inherit}
+svg.chart text.val{fill:var(--ink);font-weight:600}
+svg.chart .grid{stroke:var(--line);stroke-width:1}
+svg.chart .hit{fill:transparent;cursor:default}
+svg.chart g.bar:hover rect.m{opacity:.85}
+svg.chart text.sel{fill:var(--ink);font-weight:700}
+.nodata{padding:28px 0;text-align:center;color:var(--muted);font-size:14px}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:7px 10px;border-radius:6px;opacity:0;transition:opacity .1s;z-index:30;max-width:260px}
+.tip.show{opacity:1}
+.tip b{display:block;margin-bottom:2px}
+details.tv{margin-top:10px;font-size:13px}
+details.tv summary{cursor:pointer;color:var(--muted)}
+details.tv table{min-width:0;margin-top:6px}
+details.tv td,details.tv th{padding:4px 8px}
+
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,20,25,.38);opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.open{opacity:1;pointer-events:auto}
+aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;z-index:5}
+aside.drawer.open{transform:none}
+.dh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:18px}
+.db{padding:18px 20px;overflow:auto;flex:1}
+.df{padding:12px 20px;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.grid .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+label.f input,label.f select,label.f textarea{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;color:var(--ink);font-size:15px}
+label.f textarea{min-height:60px;resize:vertical}
+.req::after{content:" *";color:var(--bad)}
+.statusPick{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.statusPick button{border:1px solid var(--line);background:none;border-radius:8px;padding:8px 6px;cursor:pointer;font-size:13.5px}
+.statusPick button[aria-pressed="true"]{border-color:var(--c);color:var(--c);font-weight:700;box-shadow:inset 0 -3px 0 var(--c)}
+.labhint{font-size:13px;padding:8px 12px;border-radius:8px;background:var(--soft);border-left:3px solid var(--teal)}
+.labhint:empty{display:none}
+fieldset.methods{border:1px solid var(--line);border-radius:8px;padding:10px 12px 12px;margin:0}
+fieldset.methods legend{font-size:13px;color:var(--muted);padding:0 4px}
+.mrow{display:grid;grid-template-columns:110px 1fr auto;gap:10px;align-items:center;padding:6px 0}
+.mrow + .mrow{border-top:1px dashed var(--line)}
+.mrow[hidden]{display:none}
+.mrow label.ck{display:flex;align-items:center;gap:8px;font-weight:700;cursor:pointer}
+.mrow label.ck input{width:18px;height:18px;accent-color:var(--teal)}
+.mrow input.val{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;font-size:18px;font-weight:600;min-width:0}
+.mrow input.val:disabled{background:var(--soft);color:var(--muted)}
+.mrow .rd{font-size:13px;color:var(--muted);white-space:nowrap;min-width:120px;text-align:right}
+.mrow .rd b{color:var(--ink)}
+.compare{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;padding:8px 12px;background:var(--soft);border-radius:8px;font-size:15px}
+.waitbox{padding:12px 14px;border:1px dashed var(--line);border-radius:8px;font-size:14px;color:var(--muted)}
+.waitbox b{color:var(--ink)}
+.rcs{--rc1:#2a78d6;--rc2:#eb6834;--rc3:#1baf7a;--rc4:#eda100;--rc5:#e87ba4;--rc6:#008300;--rc7:#6250d6;--rc8:#e34948}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .rcs{--rc1:#3987e5;--rc2:#d95926;--rc3:#199e70;--rc4:#c98500;--rc5:#d55181;--rc6:#008300;--rc7:#9085e9;--rc8:#e66767} }
+:root[data-theme="dark"] .rcs{--rc1:#3987e5;--rc2:#d95926;--rc3:#199e70;--rc4:#c98500;--rc5:#d55181;--rc6:#008300;--rc7:#9085e9;--rc8:#e66767}
+.rcrow{display:grid;grid-template-columns:minmax(150px,260px) 1fr 90px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.rcrow:last-child{border-bottom:0}
+.rcrow .nm{display:flex;gap:8px;align-items:center;font-size:14.5px}
+.rcrow .nm i{flex:none;width:12px;height:12px;border-radius:3px;background:var(--c)}
+.rcrow .tr{height:22px;background:var(--soft);border-radius:4px;overflow:hidden}
+.rcrow .tr b{display:block;height:100%;background:var(--c);border-radius:0 4px 4px 0}
+.rcrow .n{text-align:right;font-size:14px;color:var(--muted)}
+.rcrow .n strong{font-size:20px;color:var(--ink);margin-right:4px}
+.rctop{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin:2px 0 14px}
+.rctop .big{font-size:22px;font-weight:700}
+fieldset.close{border:1px solid var(--line);border-radius:8px;padding:10px 12px 12px;margin:0}
+fieldset.close legend{font-size:13px;color:var(--muted);padding:0 4px}
+fieldset.close.need{border-color:var(--s-closed);box-shadow:inset 3px 0 0 var(--s-closed)}
+fieldset.close.need legend{color:var(--s-closed);font-weight:600}
+h3.sec{font-size:14px;margin:22px 0 8px}
+.hist{list-style:none;margin:0;padding:0;border-left:2px solid var(--line)}
+.hist li{padding:0 0 12px 14px;position:relative;font-size:13.5px}
+.hist li::before{content:"";position:absolute;left:-6px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--panel);border:2px solid var(--c,var(--muted))}
+.hist .w{color:var(--muted);font-size:12px}
+
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:0;width:min(560px,94vw)}
+dialog::backdrop{background:rgba(10,20,25,.4)}
+dialog .db{max-height:70vh}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
+.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:2px 4px 2px 10px;font-size:13px}
+.chip button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 4px}
+.addrow{display:flex;gap:6px}.addrow input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel)}
+.toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40}
+.toast.show{opacity:1}
+
+@media (max-width:760px){
+  .wrap{padding:0 16px}
+  .track{grid-template-columns:1fr 1fr;gap:10px}
+  .stage{min-height:170px}
+  .stage .ico{width:58px;height:58px}
+  .stage .n{font-size:28px}
+  .stage .d{display:none}
+  .stage .tag{font-size:12px}
+  .grid,.sumgrid{grid-template-columns:1fr}
+  .rcrow{grid-template-columns:1fr 70px}.rcrow .tr{grid-column:1/-1;grid-row:2}
+  .kpis{grid-template-columns:repeat(2,1fr)} .kpi{border-bottom:1px solid var(--line)}
+  .statusPick{grid-template-columns:1fr 1fr}
+  .mrow{grid-template-columns:90px 1fr} .mrow .rd{grid-column:1/-1;text-align:left}
+  .count{width:100%;margin:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.stage:hover,.stage:hover .ico{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>ติดตามผล Re-test</h1>
+      <div class="sub">Chemical Testing Re-test Record</div>
+    </div>
+    <span class="grow"></span>
+    <span class="conn" id="conn"><i></i><span>กำลังเชื่อมต่อ…</span></span>
+    <select class="user" id="me" title="ผู้ใช้งาน (บันทึกในประวัติ)"></select>
+    <button class="btn" id="btnImport">นำเข้า Excel</button>
+    <button class="btn" id="btnExport">ส่งออก CSV</button>
+    <button class="btn" id="btnSettings">ตั้งค่า</button>
+    <button class="btn primary" id="btnNew">เพิ่มรายการ</button>
+  </header>
+
+  <div class="sheets" id="sheets" role="tablist" aria-label="เดือน"></div>
+
+  <div class="viewbar">
+    <h2 id="monthTitle"></h2>
+    <span class="grow"></span>
+    <div class="seg" role="group" aria-label="มุมมอง">
+      <button data-view="list" aria-pressed="true">รายการ</button>
+      <button data-view="summary" aria-pressed="false">สรุปเดือนนี้</button>
+    </div>
+  </div>
+
+  <section id="vList">
+    <nav class="track" id="track" aria-label="สถานะการติดตาม"></nav>
+    <div class="filters">
+      <input type="search" id="q" placeholder="ค้นหา Lab No., Sample, Remark, Root cause">
+      <select id="fReq"><option value="">ผู้ขอทั้งหมด</option></select>
+      <select id="fItem"><option value="">Test item ทั้งหมด</option></select>
+      <select id="fMethod"><option value="">ทุกวิธี</option><option value="WC">WC</option><option value="NIR">NIR</option><option value="none">ยังไม่ระบุวิธี</option></select>
+      <select id="fCmp"><option value="">ผลเปรียบเทียบทั้งหมด</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr>
+          <th>Re-test date</th><th>Requested</th><th>Lab No.</th><th>Sample name</th><th>Test item</th>
+          <th>Original</th><th>ผล Re-test</th>
+          <th>Comparison / Root cause</th><th>สถานะ</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty" hidden></div>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 30px">Δ = |ผล Re-test − Original| ÷ Original · สีแดงเมื่อเกิน <span id="thLbl">5</span>% · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
+  </section>
+
+  <section id="vSummary" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="sumgrid">
+      <div class="card wide rcs">
+        <h3 id="rcTitle">Root cause</h3>
+        <p class="cap" id="rcCap"></p>
+        <div id="chRoot"></div>
+      </div>
+      <div class="card wide rcs">
+        <h3 id="yearTitle"></h3>
+        <p class="cap">จำนวนงานที่ปิดในแต่ละเดือน แยกตาม Root cause · คลิกแท่งเพื่อเปิดเดือนนั้น</p>
+        <div id="chYear"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="dh"><h2 id="dTitle">เพิ่มรายการ</h2><span class="grow"></span><button class="btn sm" id="dClose" aria-label="ปิด">ปิด</button></div>
+  <form class="db" id="form" autocomplete="off">
+    <div class="statusPick" id="statusPick"></div>
+    <div class="grid" style="margin-top:16px">
+      <label class="f">Re-test date<input type="date" name="retest_date"></label>
+      <label class="f">Requested (ผู้ส่งตัวอย่าง)<select name="requester"></select></label>
+      <label class="f"><span class="req">Lab No.</span><input name="lab_no" required></label>
+      <label class="f">Sample name<input name="sample_name"></label>
+      <div class="full labhint" id="labHint"></div>
+      <label class="f">Receive date<input type="date" name="sample_date"></label>
+      <label class="f"><span class="req">Test item</span><input name="test_item" list="itemList" required></label>
+      <label class="f full">Remark / เหตุผลที่ขอ Re-test<input name="remark"></label>
+      <fieldset class="full methods">
+        <legend>Original result — ติ๊กวิธีของผลเดิม แล้วระบุค่า</legend>
+        <div class="mrow">
+          <label class="ck"><input type="checkbox" name="orig_wc"> WC</label>
+          <input class="val" name="orig_wc_result" inputmode="decimal" placeholder="ค่า Original WC" disabled>
+          <span class="rd"></span>
+        </div>
+        <div class="mrow">
+          <label class="ck"><input type="checkbox" name="orig_nir"> NIR</label>
+          <input class="val" name="orig_nir_result" inputmode="decimal" placeholder="ค่า Original NIR" disabled>
+          <span class="rd"></span>
+        </div>
+        <div class="mrow" id="legacyOrig" hidden>
+          <span class="muted" style="font-size:13px">ไม่ระบุวิธี</span>
+          <input class="val" name="original_result" inputmode="decimal">
+          <span class="rd">ข้อมูลเดิมจาก Excel</span>
+        </div>
+      </fieldset>
+
+      <div class="full waitbox" id="waitBox">x<b id="waitBtn"></b> ที่รายการ<span id="nextRound"></span></div>
+      <fieldset class="full methods phase-test">
+        <legend>ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า</legend>
+        <div class="mrow">
+          <label class="ck"><input type="checkbox" name="wc"> WC</label>
+          <input class="val" name="wc_result" inputmode="decimal" placeholder="ค่าผล WC" disabled>
+          <span class="rd" id="wcRound"></span>
+        </div>
+        <div class="mrow">
+          <label class="ck"><input type="checkbox" name="nir"> NIR</label>
+          <input class="val" name="nir_result" inputmode="decimal" placeholder="ค่าผล NIR" disabled>
+          <span class="rd" id="nirRound"></span>
+        </div>
+        <div class="mrow" id="legacyRow" hidden>
+          <span class="muted" style="font-size:13px">ไม่ระบุวิธี</span>
+          <input class="val" name="retest_result" inputmode="decimal">
+          <span class="rd">ข้อมูลเดิมจาก Excel</span>
+        </div>
+      </fieldset>
+      <div class="full compare phase-test" id="cmpBox"></div>
+      <label class="f phase-test">Comparison<select name="comparison"></select></label>
+
+      <fieldset class="full close phase-close" id="closeBox">
+        <legend>Root cause (ระบุเมื่อปิดงาน)</legend>
+        <div class="grid">
+          <label class="f full"><span id="rcLbl">เกิดอะไรขึ้น</span><select name="root_cause_cat"></select></label>
+          <label class="f full">รายละเอียด / การแก้ไข<textarea name="root_cause" placeholder="เช่น ตัวอย่างจับตัวเป็นก้อน บดใหม่แล้วทดสอบซ้ำได้ผลใกล้เคียง"></textarea></label>
+        </div>
+      </fieldset>
+      <label class="f full" id="noteWrap" hidden>หมายเหตุการเปลี่ยนสถานะ<input name="note" placeholder="บันทึกลงประวัติ"></label>
+    </div>
+    <div id="histWrap" hidden>
+      <h3 class="sec">ประวัติการติดตาม</h3>
+      <ul class="hist" id="hist"></ul>
+    </div>
+  </form>
+  <div class="df">
+    <button class="btn primary" id="dSave">บันทึก</button>
+    <button class="btn" id="dSaveClose" hidden>บันทึกและปิดงาน</button>
+    <button class="btn" id="dCancel">ยกเลิก</button>
+    <span class="grow"></span>
+    <button class="btn danger" id="dDelete" hidden>ลบรายการ</button>
+  </div>
+</aside>
+<datalist id="itemList"></datalist>
+
+<dialog id="dlgSettings">
+  <div class="dh"><h2>ตั้งค่า</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
+  <div class="db">
+    <div class="grid">
+      <label class="f full">Worker URL (เว้นว่างถ้าเปิดเว็บจาก Worker โดยตรง)<input id="sApi" placeholder="https://lab-retest.your-name.workers.dev"></label>
+      <label class="f">API token (ถ้าตั้งไว้)<input id="sTok" type="password"></label>
+      <label class="f">เกณฑ์ Δ ที่ถือว่าต่างมาก (%)<input id="sTh" type="number" min="0" step="0.5"></label>
+      <label class="f">แจ้งเตือนค้างเกิน (วัน)<input id="sLate" type="number" min="1"></label>
+      <label class="f">ธีม<select id="sTheme"><option value="">ตามระบบ</option><option value="light">สว่าง</option><option value="dark">มืด</option></select></label>
+    </div>
+    <div style="margin-top:10px"><button class="btn primary sm" id="sSave">บันทึกการตั้งค่า</button></div>
+    <h3 class="sec">รายชื่อผู้ขอ (Requested)</h3><div class="chips" id="cReq"></div>
+    <div class="addrow"><input id="aReq" placeholder="เพิ่มชื่อ"><button class="btn sm" data-add="requester">เพิ่ม</button></div>
+    <h3 class="sec">Root cause</h3><div class="chips" id="cRoot"></div>
+    <div class="addrow"><input id="aRoot" placeholder="เพิ่ม Root cause"><button class="btn sm" data-add="root_cause">เพิ่ม</button></div>
+    <h3 class="sec">Test item</h3><div class="chips" id="cItem"></div>
+    <div class="addrow"><input id="aItem" placeholder="เพิ่ม Test item"><button class="btn sm" data-add="test_item">เพิ่ม</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlgImport">
+  <div class="dh"><h2>นำเข้าจาก Excel</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
+  <div class="db">
+    <p style="margin-top:0">เลือกไฟล์ที่มีหัวคอลัมน์แบบเดียวกับ <b>Chemical Testing Re-test Record</b> (Re-test Date, Requested, Lab No., Sample Name …) ถ้ามีคอลัมน์ WC / NIR จะอ่านเป็นผลของวิธีนั้น ระบบอ่านทุกชีต</p>
+    <input type="file" id="impFile" accept=".xlsx,.xls,.csv">
+    <p class="muted" id="impInfo"></p>
+  </div>
+  <div class="df"><button class="btn primary" id="impGo" disabled>นำเข้า</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="tip" id="tip"></div>
+
+<script>
+const STATUS = [
+  {k:"check",  t:"เช็คตัวอย่าง", d:"รอผู้ส่งตัวอย่างตรวจสอบ", next:"เช็คตัวอย่างแล้ว"},
+  {k:"lab",    t:"ส่งเข้าห้องปฏิบัติการ", d:"กำลังทดสอบซ้ำ รอผล", next:"กรอกผล Re-test"},
+  {k:"result", t:"ได้ผลแล้ว", d:"รอสรุป Root cause", next:"ปิดงาน"},
+  {k:"closed", t:"ปิดงาน", d:"ระบุ Root cause แล้ว"},
+];
+const SI = Object.fromEntries(STATUS.map((s,i)=>[s.k,i]));
+const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+const MONTHS_FULL = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const $ = s => document.querySelector(s);
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem("rt_"+k); return v===null?d:v }catch{ return d } },
+  set(k,v){ try{ localStorage.setItem("rt_"+k,v) }catch{} }
+};
+let cfg = { api:store.get("api",""), tok:store.get("tok",""), th:+store.get("th",5), late:+store.get("late",3), theme:store.get("theme","") };
+let opts = {requester:[], test_item:[], comparison:["Consistent","Inconsistent","Pending"], root_cause:[]};
+const NOW = new Date();
+let year = NOW.getFullYear(), month = NOW.getMonth()+1;   // เปิดที่เดือนปัจจุบัน
+let view = "list";
+let yearRows = [], fStatus = "", editing = null, formStatus = "check", labInfo = null;
+
+function applyTheme(){ if(cfg.theme) document.documentElement.dataset.theme=cfg.theme; else delete document.documentElement.dataset.theme; }
+applyTheme();
+
+function base(){ if(cfg.api) return cfg.api.replace(/\/+$/,""); return location.protocol.startsWith("http") ? location.origin : ""; }
+async function api(path, opt={}){
+  const b = base(); if(!b) throw new Error("ยังไม่ได้ตั้งค่า Worker URL");
+  const headers = {"Content-Type":"application/json"};
+  if(cfg.tok) headers.Authorization = "Bearer "+cfg.tok;
+  const me = $("#me").value; if(me) headers["X-User"] = encodeURIComponent(me);
+  const r = await fetch(b+"/api"+path, {...opt, headers});
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(r.status===401 ? "ต้องใส่ API token ที่ถูกต้องในหน้าตั้งค่า" : (data.error || ("HTTP "+r.status)));
+  return data;
+}
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2600); }
+function conn(state,msg){ const c=$("#conn"); c.className="conn "+state; c.querySelector("span").textContent=msg; }
+const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ym = (y,m) => `${y}-${String(m).padStart(2,"0")}`;
+function fmtDate(s){ if(!s) return ""; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s); return m?`${m[3]}/${m[2]}/${m[1]}`:s; }
+function daysSince(s){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||""); if(!m) return null; const d=new Date(+m[1],m[2]-1,+m[3]); const n=new Date(); n.setHours(0,0,0,0); return Math.round((n-d)/864e5); }
+function nums(s){ return String(s??"").split(/[,;/]/).map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x)); }
+function delta(o,r){ const a=nums(o), b=nums(r); if(!a.length||!b.length) return null; let mx=0;
+  for(let i=0;i<Math.min(a.length,b.length);i++){ if(a[i]===0) continue; mx=Math.max(mx,Math.abs(b[i]-a[i])/Math.abs(a[i])*100); } return mx; }
+function origOf(get){ // get(field) -> value
+  return { wc:{on:!!+get("orig_wc"), v:get("orig_wc_result")}, nir:{on:!!+get("orig_nir"), v:get("orig_nir_result")}, legacy:get("original_result") };
+}
+function origFor(o, m){ // ผลเดิมที่ใช้เทียบ: วิธีเดียวกันก่อน ถ้าไม่มีใช้อีกวิธี
+  const key = (m||"").toLowerCase();
+  if(key && o[key]?.on && o[key].v) return {v:o[key].v, m:m};
+  for(const k of ["wc","nir"]) if(o[k].on && o[k].v) return {v:o[k].v, m:k.toUpperCase(), cross: !!key && k!==key};
+  return o.legacy ? {v:o.legacy, m:""} : null;
+}
+function originals(r){
+  const out=[];
+  if(+r.orig_wc) out.push({m:"WC", v:r.orig_wc_result});
+  if(+r.orig_nir) out.push({m:"NIR", v:r.orig_nir_result});
+  if(!out.length && r.original_result) out.push({m:"", v:r.original_result});
+  return out;
+}
+function stamp(r){
+  const d = s => s ? new Date(s).toLocaleDateString("th-TH",{day:"numeric",month:"short"}) : "";
+  if(r.status==="check") return `<div class="sm-note">รอ ${esc(r.requester||"ผู้ส่งตัวอย่าง")} เช็ค</div>`;
+  if(r.checked_by) return `<div class="sm-note">เช็คโดย ${esc(r.checked_by)} ${d(r.checked_at)}</div>`;
+  return "";
+}
+function results(r){ // [{m,v,round}]
+  const out=[];
+  if(+r.wc) out.push({m:"WC", v:r.wc_result, round:r.wc_round});
+  if(+r.nir) out.push({m:"NIR", v:r.nir_result, round:r.nir_round});
+  if(!out.length && r.retest_result) out.push({m:"", v:r.retest_result});
+  return out;
+}
+
+/* ---------- load */
+async function loadOptions(){
+  const o = await api("/options"); opts = {...opts, ...o};
+  if(!opts.comparison.length) opts.comparison=["Consistent","Inconsistent","Pending"];
+  const me=$("#me"), cur=store.get("me","");
+  me.innerHTML = `<option value="">— เลือกชื่อผู้ใช้ —</option>`+opts.requester.map(v=>`<option ${v===cur?"selected":""}>${esc(v)}</option>`).join("");
+  fill($("#fReq"),"ผู้ขอทั้งหมด",opts.requester); fill($("#fItem"),"Test item ทั้งหมด",opts.test_item); fill($("#fCmp"),"ผลเปรียบเทียบทั้งหมด",opts.comparison);
+  $("#itemList").innerHTML = opts.test_item.map(v=>`<option value="${esc(v)}">`).join("");
+  const f=$("#form"), blank=list=>`<option value=""></option>`+list.map(v=>`<option>${esc(v)}</option>`).join("");
+  f.requester.innerHTML = blank(opts.requester);
+  f.comparison.innerHTML = opts.comparison.map(v=>`<option>${esc(v)}</option>`).join("");
+  f.root_cause_cat.innerHTML = `<option value="">— เลือก Root cause —</option>`+opts.root_cause.map(v=>`<option>${esc(v)}</option>`).join("");
+  renderChips();
+}
+function fill(sel,all,list){ const v=sel.value; sel.innerHTML=`<option value="">${all}</option>`+list.map(x=>`<option>${esc(x)}</option>`).join(""); sel.value=v; }
+async function loadYear(){ yearRows = await api(`/retests?year=${year}`); renderAll(); }
+async function boot(){
+  $("#thLbl").textContent = cfg.th;
+  renderSheets();
+  if(!base()){ conn("err","ยังไม่ได้ตั้งค่า Worker"); renderAll(); showEmpty("ตั้งค่า Worker URL ในเมนู “ตั้งค่า” เพื่อเริ่มใช้งาน"); return; }
+  try{ await loadOptions(); await loadYear(); conn("ok","เชื่อมต่อแล้ว"); }
+  catch(e){ conn("err","เชื่อมต่อไม่ได้"); renderAll(); showEmpty(e.message); }
+}
+
+/* ---------- month sheets */
+const monthRows = () => yearRows.filter(r => (r.eff_date||"").slice(0,7) === ym(year,month));
+function renderSheets(){
+  const cnt = Array(12).fill(0); yearRows.forEach(r=>{ const m=+(r.eff_date||"").slice(5,7); if(m) cnt[m-1]++; });
+  const years=[]; for(let y=NOW.getFullYear()+1; y>=NOW.getFullYear()-4; y--) years.push(y);
+  $("#sheets").innerHTML = `<select class="year" id="yearSel" aria-label="ปี">${years.map(y=>`<option ${y===year?"selected":""}>${y}</option>`).join("")}</select>`+
+    MONTHS.map((n,i)=>{
+      const isNow = year===NOW.getFullYear() && i===NOW.getMonth();
+      return `<button class="sheet ${isNow?"now":""} ${cnt[i]?"":"zero"}" role="tab" data-m="${i+1}" aria-selected="${i+1===month}" title="${MONTHS_FULL[i]} ${year}${isNow?" (เดือนปัจจุบัน)":""}"><b>${n}</b><small>${cnt[i]}</small></button>`;
+    }).join("");
+  $("#yearSel").onchange = e => { year=+e.target.value; month = year===NOW.getFullYear()? NOW.getMonth()+1 : 1; fStatus=""; loadYear().catch(err=>toast(err.message)); };
+  const sel=$("#sheets .sheet[aria-selected=true]"); if(sel) sel.scrollIntoView({block:"nearest",inline:"center"});
+  $("#monthTitle").textContent = `${MONTHS_FULL[month-1]} ${year}`;
+}
+$("#sheets").addEventListener("click",e=>{ const b=e.target.closest(".sheet"); if(!b) return; month=+b.dataset.m; fStatus=""; renderAll(); });
+
+/* ---------- list */
+function filtered(){
+  const q=$("#q").value.trim().toLowerCase(), req=$("#fReq").value, it=$("#fItem").value, cm=$("#fCmp").value, me=$("#fMethod").value;
+  return monthRows().filter(r=>{
+    if(req && r.requester!==req) return false;
+    if(it && r.test_item!==it) return false;
+    if(cm && (r.comparison||"Pending")!==cm) return false;
+    if(me==="WC" && !+r.wc) return false;
+    if(me==="NIR" && !+r.nir) return false;
+    if(me==="none" && (+r.wc || +r.nir)) return false;
+    if(q && ![r.lab_no,r.sample_name,r.remark,r.root_cause,r.root_cause_cat].some(v=>String(v||"").toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+const ICONS = {
+  check:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="10" width="30" height="42" rx="4"/><path d="M22 10v-2h14v2"/><path d="M21 24h16M21 32h10"/><circle cx="42" cy="42" r="9" fill="var(--panel)"/><path d="M48.5 48.5L55 55"/><path d="M38.5 42l2.5 2.5 4.5-5"/></svg>`,
+  lab:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M25 8h14M27 8v16L13 50a4 4 0 0 0 3.5 6h31a4 4 0 0 0 3.5-6L37 24V8"/><path d="M18 42h28" /><circle cx="27" cy="48" r="2" fill="currentColor"/><circle cx="36" cy="46" r="1.6" fill="currentColor"/><path d="M46 14c3 0 3 4 6 4" opacity=".6"/></svg>`,
+  result:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="10" width="44" height="44" rx="6"/><path d="M20 44V34M30 44V24M40 44V30"/><path d="M18 50h28" opacity=".5"/><circle cx="46" cy="18" r="3" fill="currentColor"/></svg>`,
+  closed:`<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M32 6l6 5 8-1 2 8 7 4-3 7 3 7-7 4-2 8-8-1-6 5-6-5-8 1-2-8-7-4 3-7-3-7 7-4 2-8 8 1z"/><path d="M23 32l6 6 12-13"/></svg>`,
+};
+function renderTrack(list){
+  const c = Object.fromEntries(STATUS.map(s=>[s.k,0])); list.forEach(r=>c[r.status]=(c[r.status]||0)+1);
+  $("#track").innerHTML = STATUS.map((s,i)=>`<button class="stage st-${s.k}" data-s="${s.k}" aria-pressed="${fStatus===s.k}" aria-label="${s.t} ${c[s.k]} รายการ">
+     <span class="ix">0${i+1}</span>
+     <span class="ico" aria-hidden="true">${ICONS[s.k]}</span>
+     <span class="body"><span class="tag">${s.t}</span>
+       <span class="row"><span class="n">${c[s.k]}</span><span class="d">${s.d}</span></span></span></button>`).join("");
+}
+function showEmpty(msg){ $("#rows").innerHTML=""; const e=$("#empty"); e.hidden=false; e.textContent=msg; $("#count").textContent=""; }
+function renderAll(){ renderSheets(); renderList(); if(view==="summary") renderSummary(); }
+function renderList(){
+  const all = filtered(); renderTrack(all);
+  const list = fStatus ? all.filter(r=>r.status===fStatus) : all;
+  $("#count").textContent = `${list.length} รายการ${fStatus?" · "+STATUS[SI[fStatus]].t:""}`;
+  if(!list.length){ showEmpty(monthRows().length ? "ไม่มีรายการที่ตรงกับตัวกรอง" : `ยังไม่มีรายการ Re-test ใน${MONTHS_FULL[month-1]} ${year} · กด “เพิ่มรายการ” เพื่อเริ่มบันทึก`); return; }
+  $("#empty").hidden = true;
+  $("#rows").innerHTML = list.map(r=>{
+    const i = SI[r.status] ?? 0, s = STATUS[i];
+    const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
+    const res = results(r);
+    const resHtml = res.length ? res.map(x=>{
+      const ob = origFor(origOf(k=>r[k]), x.m), d = ob ? delta(ob.v, x.v) : null;
+      return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` ครั้งที่ ${x.round}`:""}</span>`:""}
+        <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span>${d!==null?`<span class="delta ${d>cfg.th?"hi":""}" title="เทียบกับ Original ${ob.m}">Δ ${d.toFixed(1)}%${ob.cross?` (เทียบ ${ob.m})`:""}</span>`:""}</div>`;
+    }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"อยู่ในห้องปฏิบัติการ…":"ยังไม่ระบุวิธี"}</span>`;
+    return `<tr data-id="${r.id}">
+      <td>${fmtDate(r.retest_date)}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
+      <td>${esc(r.requester)}</td>
+      <td class="lab">${esc(r.lab_no)}${r.lab_total>1?`<span class="round">Re-test ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
+      <td>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>
+      <td>${esc(r.test_item)}</td>
+      <td><div class="res">${originals(r).map(x=>`<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}</span>`:""}<span class="v">${x.v?esc(x.v):'<span class="muted">—</span>'}</span></div>`).join("") || '<span class="muted">—</span>'}</div></td>
+      <td><div class="res">${resHtml}</div></td>
+      <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(r.comparison||"Pending")}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
+      <td class="st-${s.k}"><div class="prog"><span class="ticks">${STATUS.map((_,j)=>`<b class="${j<=i?"on":""}"></b>`).join("")}</span><span class="lbl">${s.t}</span></div>${stamp(r)}</td>
+      <td class="st-${STATUS[Math.min(i+1,3)].k}">${s.next?`<button class="adv" data-adv="${r.id}">${s.next}</button>`:""}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ---------- summary charts (inline SVG) */
+const tip = $("#tip");
+function showTip(e, html){ tip.innerHTML=html; tip.classList.add("show"); const x=Math.min(e.clientX+14, innerWidth-tip.offsetWidth-8); tip.style.left=x+"px"; tip.style.top=(e.clientY+14)+"px"; }
+function hideTip(){ tip.classList.remove("show"); }
+document.addEventListener("pointermove",e=>{ const g=e.target.closest?.("[data-tip]"); if(g) showTip(e, g.dataset.tip); else hideTip(); });
+
+function niceMax(v){ if(v<=5) return 5; const p=Math.pow(10,Math.floor(Math.log10(v))); const n=v/p; return (n<=2?2:n<=5?5:10)*p; }
+const NO_RC = "ไม่ระบุ";
+function rcColor(k){ const i=opts.root_cause.indexOf(k); return i>=0 && i<8 ? `var(--rc${i+1})` : "var(--na)"; }  // สีผูกกับ Root cause ไม่เปลี่ยนตามอันดับ
+function rcList(rows){ // นับ Root cause ของงานที่ปิด เรียงมาก→น้อย
+  const m={}; rows.filter(r=>r.status==="closed").forEach(r=>{ const k=r.root_cause_cat||NO_RC; (m[k] ||= {v:0,inc:0,con:0}); m[k].v++; if(r.comparison==="Inconsistent") m[k].inc++; if(r.comparison==="Consistent") m[k].con++; });
+  return Object.entries(m).map(([k,o])=>({k,...o})).sort((a,b)=>b.v-a.v);
+}
+function rcBars(el, data, total){
+  if(!data.length){ el.innerHTML=`<div class="nodata">ยังไม่มีงานที่ปิดในเดือนนี้ — Root cause จะแสดงเมื่อปิดงาน</div>`; return; }
+  const max=Math.max(...data.map(d=>d.v)), top=data[0];
+  el.innerHTML = `<div class="rctop"><span class="muted">สาเหตุหลัก</span><span class="big">${esc(top.k)}</span><span class="muted">${top.v} งาน · ${Math.round(top.v/total*100)}% ของงานที่ปิด</span></div>`+
+    data.map(d=>`<div class="rcrow" style="--c:${rcColor(d.k)}" data-tip="<b>${esc(d.k)}</b>${d.v} งาน (${Math.round(d.v/total*100)}%)<br>Consistent ${d.con} · Inconsistent ${d.inc}">
+      <span class="nm"><i></i>${esc(d.k)}</span>
+      <span class="tr"><b style="width:${Math.max(d.v/max*100,2)}%"></b></span>
+      <span class="n"><strong>${d.v}</strong>${Math.round(d.v/total*100)}%</span></div>`).join("");
+}
+function vstack(el, months, series){
+  const W=900, H=280, padL=34, padB=30, padT=14, max=niceMax(Math.max(1,...months.map(m=>m.total)));
+  const bw=(W-padL)/12, barW=Math.min(40,bw*.58), sy=v=>(H-padB-padT)*v/max;
+  const ticks=[0,max/2,max].map(v=>Math.round(v));
+  let s=`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟแท่ง Root cause รายเดือน">`;
+  ticks.forEach(t=>{ const y=H-padB-sy(t); s+=`<line class="grid" x1="${padL}" x2="${W}" y1="${y}" y2="${y}"></line><text x="${padL-8}" y="${y+4}" text-anchor="end">${t}</text>`; });
+  months.forEach((m,i)=>{
+    const cx=padL+bw*i+bw/2, x=cx-barW/2; let y=H-padB;
+    const segs=series.map(c=>({...c,v:m.by[c.k]||0})).filter(c=>c.v>0);
+    let bars=""; segs.forEach((c,j)=>{ const h=sy(c.v), gap=j<segs.length-1?2:0, topSeg=j===segs.length-1; y-=h;
+      bars+=`<rect class="m" x="${x}" y="${y}" width="${barW}" height="${Math.max(h-gap,1)}" rx="${topSeg?4:1}" fill="${c.c}"></rect>`; });
+    const tipTxt=`<b>${MONTHS_FULL[i]} ${year}</b>ปิดงาน ${m.total}${segs.length?"<br>"+segs.map(c=>`${esc(c.k)} ${c.v}`).join("<br>"):""}`;
+    s+=`<g class="bar" data-m="${i+1}" style="cursor:pointer" data-tip="${tipTxt}">
+      <rect class="hit" x="${cx-bw/2}" y="${padT}" width="${bw}" height="${H-padT}"></rect>${bars}
+      ${m.total?`<text class="val" x="${cx}" y="${H-padB-sy(m.total)-6}" text-anchor="middle">${m.total}</text>`:""}
+      <text x="${cx}" y="${H-8}" text-anchor="middle" class="${i+1===month?"sel":""}">${MONTHS[i]}</text></g>`;
+  });
+  s+=`<line x1="${padL}" x2="${W}" y1="${H-padB}" y2="${H-padB}" stroke="var(--muted)" stroke-width="1"></line></svg>`;
+  el.innerHTML = (series.length?`<div class="legend">${series.map(c=>`<span style="--c:${c.c}"><i></i>${esc(c.k)}</span>`).join("")}</div>`:"")+s+
+    `<details class="tv"><summary>ดูเป็นตาราง</summary><table><thead><tr><th>Root cause</th>${MONTHS.map(n=>`<th>${n}</th>`).join("")}<th>รวม</th></tr></thead><tbody>${
+      series.map(c=>`<tr><td>${esc(c.k)}</td>${months.map(m=>`<td>${m.by[c.k]||""}</td>`).join("")}<td><b>${months.reduce((a,m)=>a+(m.by[c.k]||0),0)}</b></td></tr>`).join("")}</tbody></table></details>`;
+  el.querySelectorAll("g.bar[data-m]").forEach(g=>g.onclick=()=>{ month=+g.dataset.m; renderAll(); });
+}
+function renderSummary(){
+  const rows = monthRows();
+  const closed = rows.filter(r=>r.status==="closed");
+  const inc = closed.filter(r=>r.comparison==="Inconsistent").length;
+  $("#kpis").innerHTML = [
+    ["Re-test ทั้งหมด", rows.length], ["ปิดงานแล้ว", closed.length], ["ค้างอยู่", rows.length-closed.length],
+    ["Inconsistent (ปิดแล้ว)", inc], ["WC / NIR", `${rows.filter(r=>+r.wc).length} / ${rows.filter(r=>+r.nir).length}`]
+  ].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
+
+  $("#rcTitle").textContent = `Root cause — ${MONTHS_FULL[month-1]} ${year}`;
+  $("#rcCap").textContent = closed.length ? `จากงานที่ปิดแล้ว ${closed.length} งาน (ยังค้าง ${rows.length-closed.length} งาน ยังไม่นับ)` : "";
+  rcBars($("#chRoot"), rcList(rows), closed.length);
+
+  const months = Array.from({length:12},()=>({total:0,by:{}}));
+  yearRows.filter(r=>r.status==="closed").forEach(r=>{ const m=+(r.eff_date||"").slice(5,7); if(!m) return; const k=r.root_cause_cat||NO_RC; months[m-1].by[k]=(months[m-1].by[k]||0)+1; months[m-1].total++; });
+  const used = new Set(months.flatMap(m=>Object.keys(m.by)));
+  const series = [...opts.root_cause.filter(k=>used.has(k)), ...[...used].filter(k=>!opts.root_cause.includes(k))].map(k=>({k, c:rcColor(k)}));
+  $("#yearTitle").textContent = `Root cause รายเดือน ปี ${year}`;
+  vstack($("#chYear"), months, series);
+}
+document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
+  view=b.dataset.view; document.querySelectorAll(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  $("#vList").hidden = view!=="list"; $("#vSummary").hidden = view!=="summary"; if(view==="summary") renderSummary();
+});
+
+/* ---------- drawer */
+function renderPhases(){
+  const f=$("#form");
+  const hasRes = editing && (+editing.wc || +editing.nir || editing.retest_result);
+  const showTest = formStatus==="result" || formStatus==="closed" || !!hasRes;
+  document.querySelectorAll("#form .phase-test").forEach(el=>el.hidden=!showTest);
+  $("#waitBox").hidden = showTest;
+  $("#closeBox").hidden = !(formStatus==="result" || formStatus==="closed" || (editing && editing.root_cause_cat));
+  $("#statusPick").hidden = !editing;
+  $("#dSaveClose").hidden = !(formStatus==="result" || (formStatus==="closed" && editing && editing.status!=="closed"));
+  const w=$("#waitBox");
+  if(!editing || formStatus==="check") w.firstChild.textContent = `บันทึกคำขอแล้ว สถานะจะเป็น “เช็คตัวอย่าง” ให้ผู้ส่งตัวอย่าง${$("#form").requester.value?` (${$("#form").requester.value})`:""} ตรวจสอบตัวอย่าง แล้วกด `;
+  else w.firstChild.textContent = "ตัวอย่างอยู่ในห้องปฏิบัติการ เมื่อได้ผลแล้ว กด ";
+  $("#waitBtn").textContent = (!editing || formStatus==="check") ? "“เช็คตัวอย่างแล้ว”" : "“กรอกผล Re-test”";
+}
+function renderStatusPick(){
+  renderPhases();
+  $("#statusPick").innerHTML = STATUS.map(s=>`<button type="button" class="st-${s.k}" data-k="${s.k}" aria-pressed="${formStatus===s.k}">${s.t}</button>`).join("");
+  $("#noteWrap").hidden = !(editing && editing.status!==formStatus);
+  const need = formStatus==="closed";
+  $("#closeBox").classList.toggle("need", need);
+  $("#closeBox legend").textContent = need ? "Root cause — ต้องระบุก่อนปิดงาน" : "Root cause (ระบุเมื่อปิดงาน)";
+  $("#rcLbl").className = need ? "req" : "";
+}
+function syncMethods(){
+  const f=$("#form");
+  for(const m of ["wc","nir","orig_wc","orig_nir"]){ const on=f[m].checked; f[m+"_result"].disabled=!on; if(!on) f[m+"_result"].value=""; }
+  updRounds(); updCompare();
+}
+function updRounds(){
+  const f=$("#form");
+  for(const m of ["wc","nir"]){
+    const el=$("#"+m+"Round"), M=m.toUpperCase();
+    if(!f[m].checked){ el.textContent=""; continue; }
+    let n;
+    if(editing && +editing[m] && editing[m+"_round"]) n=editing[m+"_round"];
+    else if(labInfo) n=labInfo[m] - (editing && +editing[m] ? 1 : 0) + 1;
+    el.innerHTML = n ? `${M} <b>ครั้งที่ ${n}</b>` : "";
+  }
+}
+function renderLabHint(){
+  const h=$("#labHint"), f=$("#form");
+  const nr=$("#nextRound"); if(nr) nr.textContent = labInfo && !editing ? ` · ครั้งนี้จะเป็น Re-test ครั้งที่ ${labInfo.total+1} ของ Lab No. นี้` : "";
+  if(!labInfo){ h.innerHTML=""; return; }
+  const others = labInfo.items.filter(x=>!editing || x.id!==editing.id);
+  if(!others.length){ h.innerHTML = f.lab_no.value.trim() ? `Lab No. นี้ยังไม่เคย Re-test · ครั้งนี้เป็นครั้งแรก` : ""; return; }
+  const wc=others.filter(x=>x.wc).length, nir=others.filter(x=>x.nir).length;
+  h.innerHTML = `Lab No. นี้เคย Re-test แล้ว <b>${others.length} ครั้ง</b> (WC ${wc} · NIR ${nir}) — ${others.slice(-4).map(x=>`${fmtDate(x.eff_date)} ${esc(x.test_item)}${x.wc?` WC#${x.wc_round}`:""}${x.nir?` NIR#${x.nir_round}`:""}`).join(", ")}`;
+}
+let labT;
+async function lookupLab(){
+  const v=$("#form").lab_no.value.trim();
+  if(!v){ labInfo=null; renderLabHint(); updRounds(); return; }
+  try{ labInfo = await api(`/lookup?lab_no=${encodeURIComponent(v)}`); }catch{ labInfo=null; }
+  renderLabHint(); updRounds();
+}
+function updCompare(){
+  const f=$("#form"), parts=[];
+  const o=origOf(k=> f[k].type==="checkbox" ? (f[k].checked?1:0) : f[k].value);
+  for(const [m,M] of [["wc","WC"],["nir","NIR"]]) if(f[m].checked){ const ob=origFor(o,M); const d=ob?delta(ob.v,f[m+"_result"].value):null; if(d!==null) parts.push([M+(ob.cross?` เทียบ Original ${ob.m}`:""),d]); }
+  if(!parts.length && f.retest_result.value){ const ob=origFor(o,""); const d=ob?delta(ob.v,f.retest_result.value):null; if(d!==null) parts.push(["ผล",d]); }
+  if(!parts.length){ $("#cmpBox").innerHTML=`<span class="muted">กรอก Original และผล Re-test เพื่อดูความต่าง (เทียบวิธีเดียวกันก่อน)</span>`; return; }
+  const mx=Math.max(...parts.map(p=>p[1]));
+  $("#cmpBox").innerHTML = parts.map(([M,d])=>`<span>Δ ${M} <b style="color:${d>cfg.th?"var(--bad)":"var(--good)"}">${d.toFixed(2)}%</b></span>`).join("")+
+    `<span class="muted">${mx>cfg.th?"เกินเกณฑ์ "+cfg.th+"% — น่าจะ Inconsistent":"อยู่ในเกณฑ์ "+cfg.th+"% — น่าจะ Consistent"}</span>`;
+}
+async function openDrawer(rec, presetStatus){
+  editing = rec || null; labInfo = null;
+  const f=$("#form"); f.reset();
+  $("#dTitle").textContent = rec ? `Lab No. ${rec.lab_no} · ${rec.test_item}` : "เพิ่มรายการ Re-test";
+  const t=new Date(), iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
+  const v = rec || {retest_date:iso, requester:$("#me").value, comparison:"Pending"};
+  for(const el of f.elements){ if(!el.name || el.name==="note") continue; if(el.type==="checkbox") el.checked=!!+v[el.name]; else el.value=v[el.name] ?? ""; }
+  $("#legacyRow").hidden = !(rec && rec.retest_result);
+  $("#legacyOrig").hidden = !(rec && rec.original_result);
+  formStatus = presetStatus || rec?.status || "check";
+  renderStatusPick(); syncMethods(); renderLabHint();
+  if(rec){ for(const m of ["wc","nir","orig_wc","orig_nir"]) if(+rec[m]) f[m+"_result"].value = rec[m+"_result"]||""; updCompare(); }
+  $("#dDelete").hidden = !rec; $("#histWrap").hidden = !rec;
+  $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden","false"); $("#scrim").classList.add("open");
+  if(rec){ $("#hist").innerHTML='<li class="muted">กำลังโหลด…</li>'; loadHist(rec.id); lookupLab(); } else setTimeout(()=>f.lab_no.focus(),50);
+}
+function closeDrawer(){ $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("open"); editing=null; }
+async function loadHist(id){
+  try{
+    const h = await api(`/retests/${id}/history`);
+    const when = s => { const d=new Date(s.replace(" ","T")+"Z"); return isNaN(d)?s:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}); };
+    const name = k => STATUS[SI[k]]?.t || k;
+    $("#hist").innerHTML = h.map(x=>{
+      const txt = x.action==="create" ? `สร้างรายการ (${name(x.to_status)})` : x.action==="status" ? `${name(x.from_status)} → <b>${name(x.to_status)}</b>` : "แก้ไขข้อมูล";
+      return `<li style="--c:${x.to_status?`var(--s-${x.to_status})`:"var(--line)"}">${txt}${x.note?`<div>${esc(x.note)}</div>`:""}<div class="w">${when(x.at)}${x.by_user?" · "+esc(x.by_user):""}</div></li>`;
+    }).join("") || '<li class="muted">ไม่มีประวัติ</li>';
+  }catch(e){ $("#hist").innerHTML=`<li>${esc(e.message)}</li>`; }
+}
+async function save(){
+  const f=$("#form");
+  if(!f.lab_no.value.trim()||!f.test_item.value.trim()){ toast("กรุณากรอก Lab No. และ Test item"); return; }
+  const data={}; for(const el of f.elements) if(el.name) data[el.name] = el.type==="checkbox" ? (el.checked?1:0) : el.value;
+  data.status = formStatus;
+  if(editing && editing.status==="check" && formStatus!=="check"){
+    const me=$("#me").value;
+    if(!me){ toast("เลือกชื่อผู้ใช้ที่มุมขวาบนก่อน เพื่อบันทึกว่าใครเช็คตัวอย่าง"); return; }
+    if(editing.requester && me!==editing.requester){ toast(`ต้องให้ ${editing.requester} (ผู้ส่งตัวอย่าง) เป็นคนเช็คตัวอย่าง`); return; }
+  }
+  const done = formStatus==="result"||formStatus==="closed";
+  if((data.orig_wc && !data.orig_wc_result) || (data.orig_nir && !data.orig_nir_result)){ toast("Original ติ๊ก WC/NIR แล้ว ต้องระบุค่าด้วย"); return; }
+  if(done && ((data.wc && !data.wc_result) || (data.nir && !data.nir_result))){ toast("ติ๊ก WC/NIR แล้ว ต้องระบุค่าผลด้วย"); return; }
+  if(done && !data.wc && !data.nir && !data.retest_result){ toast("ติ๊ก WC หรือ NIR และระบุค่าผล ก่อนส่งตรวจผล"); return; }
+  if(formStatus==="closed" && data.comparison==="Pending"){ toast("ก่อนปิดงาน ให้เลือก Comparison เป็น Consistent หรือ Inconsistent"); f.comparison.focus(); return; }
+  if(formStatus==="closed" && !data.root_cause_cat){ toast("ก่อนปิดงาน ให้ระบุ Root cause ว่าเกิดอะไรขึ้น"); f.root_cause_cat.focus(); return; }
+  try{
+    const saved = editing ? await api(`/retests/${editing.id}`,{method:"PUT",body:JSON.stringify(data)})
+                          : await api("/retests",{method:"POST",body:JSON.stringify(data)});
+    toast(editing?"บันทึกการแก้ไขแล้ว":"เพิ่มรายการแล้ว"); closeDrawer();
+    const sy=+(saved.eff_date||"").slice(0,4), sm=+(saved.eff_date||"").slice(5,7);
+    if(sy && sm && (sy!==year || sm!==month)){ year=sy; month=sm; toast(`บันทึกแล้ว · ไปที่ชีต ${MONTHS_FULL[sm-1]} ${sy}`); }
+    loadYear();
+  }catch(e){ toast(e.message); }
+}
+async function advance(id){
+  const r = yearRows.find(x=>x.id==id); if(!r) return;
+  const i = SI[r.status]??0; if(i>=3) return;
+  const to = STATUS[i+1].k;
+  const res = results(r);
+  if(to==="result"){ openDrawer(r,"result"); toast("ติ๊ก WC / NIR แล้วกรอกค่าผล Re-test"); return; }
+  if(to==="closed" && (!r.comparison||r.comparison==="Pending"||!r.root_cause_cat)){ openDrawer(r,"closed"); toast("เลือก Comparison และระบุ Root cause ก่อนปิดงาน"); $("#form").root_cause_cat.focus(); return; }
+  if(to==="lab"){
+    const me=$("#me").value;
+    if(!me){ toast("เลือกชื่อผู้ใช้ที่มุมขวาบนก่อน เพื่อบันทึกว่าใครเป็นคนเช็คตัวอย่าง"); $("#me").focus(); return; }
+    if(r.requester && me!==r.requester){ toast(`ต้องให้ ${r.requester} (ผู้ส่งตัวอย่าง) เป็นคนกดเช็คตัวอย่าง`); return; }
+  }
+  try{ await api(`/retests/${id}`,{method:"PATCH",body:JSON.stringify({status:to})}); toast(to==="lab"?"เช็คตัวอย่างแล้ว · ส่งเข้าห้องปฏิบัติการ":`เปลี่ยนเป็น “${STATUS[i+1].t}” แล้ว`); loadYear(); }
+  catch(e){ toast(e.message); }
+}
+
+/* ---------- events */
+$("#track").addEventListener("click",e=>{ const b=e.target.closest(".stage"); if(!b) return; fStatus = fStatus===b.dataset.s?"":b.dataset.s; renderList(); });
+$("#rows").addEventListener("click",e=>{
+  const a=e.target.closest("[data-adv]"); if(a){ e.stopPropagation(); advance(a.dataset.adv); return; }
+  const tr=e.target.closest("tr[data-id]"); if(tr) openDrawer(yearRows.find(r=>r.id==tr.dataset.id));
+});
+$("#q").addEventListener("input",renderList);
+["#fReq","#fItem","#fCmp","#fMethod"].forEach(s=>$(s).addEventListener("change",renderList));
+$("#me").addEventListener("change",e=>store.set("me",e.target.value));
+$("#btnNew").onclick=()=>openDrawer(null);
+$("#dClose").onclick=$("#dCancel").onclick=$("#scrim").onclick=closeDrawer;
+$("#dSave").onclick=save;
+$("#dSaveClose").onclick=()=>{ formStatus="closed"; renderStatusPick(); save(); };
+$("#form").addEventListener("submit",e=>{e.preventDefault();save();});
+$("#form").addEventListener("input",e=>{
+  const n=e.target.name;
+  if(n==="requester") renderPhases();
+  if(n==="lab_no"){ clearTimeout(labT); labT=setTimeout(lookupLab,300); }
+  if(["original_result","orig_wc_result","orig_nir_result","wc_result","nir_result","retest_result"].includes(n)) updCompare();
+});
+$("#form").addEventListener("change",e=>{ if(["wc","nir","orig_wc","orig_nir"].includes(e.target.name)){ syncMethods(); if(e.target.checked) $("#form")[e.target.name+"_result"].focus(); } });
+$("#statusPick").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; formStatus=b.dataset.k; renderStatusPick(); });
+$("#dDelete").onclick=async()=>{
+  const b=$("#dDelete");
+  if(b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.textContent="กดอีกครั้งเพื่อยืนยันการลบ"; setTimeout(()=>{ b.dataset.confirm=""; b.textContent="ลบรายการ"; },3000); return; }
+  try{ await api(`/retests/${editing.id}`,{method:"DELETE"}); toast("ลบรายการแล้ว"); closeDrawer(); loadYear(); }catch(e){ toast(e.message); }
+};
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && $("#drawer").classList.contains("open")) closeDrawer(); });
+document.querySelectorAll("dialog [data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
+
+/* settings */
+$("#btnSettings").onclick=()=>{ $("#sApi").value=cfg.api; $("#sTok").value=cfg.tok; $("#sTh").value=cfg.th; $("#sLate").value=cfg.late; $("#sTheme").value=cfg.theme; $("#dlgSettings").showModal(); };
+$("#sSave").onclick=()=>{
+  cfg={api:$("#sApi").value.trim(),tok:$("#sTok").value.trim(),th:+$("#sTh").value||5,late:+$("#sLate").value||3,theme:$("#sTheme").value};
+  Object.entries(cfg).forEach(([k,v])=>store.set(k,v)); applyTheme(); toast("บันทึกการตั้งค่าแล้ว"); boot();
+};
+function renderChips(){
+  const chip=(k,v)=>`<span class="chip">${esc(v)}<button data-del="${k}" data-v="${esc(v)}" aria-label="ลบ ${esc(v)}">×</button></span>`;
+  $("#cReq").innerHTML=opts.requester.map(v=>chip("requester",v)).join("");
+  $("#cRoot").innerHTML=opts.root_cause.map(v=>chip("root_cause",v)).join("");
+  $("#cItem").innerHTML=opts.test_item.map(v=>chip("test_item",v)).join("");
+}
+$("#dlgSettings").addEventListener("click",async e=>{
+  const d=e.target.closest("[data-del]"), a=e.target.closest("[data-add]");
+  try{
+    if(d){ await api(`/options?kind=${d.dataset.del}&value=${encodeURIComponent(d.dataset.v)}`,{method:"DELETE"}); await loadOptions(); }
+    if(a){ const inp={requester:"#aReq",root_cause:"#aRoot",test_item:"#aItem"}[a.dataset.add]; const el=$(inp); if(!el.value.trim()) return;
+      await api("/options",{method:"POST",body:JSON.stringify({kind:a.dataset.add,value:el.value})}); el.value=""; await loadOptions(); }
+  }catch(err){ toast(err.message); }
+});
+
+/* export CSV — เดือนที่เปิดอยู่ */
+$("#btnExport").onclick=()=>{
+  const cols=[["retest_date","Re-test Date"],["requester","Requested"],["lab_no","Lab No."],["sample_name","Sample Name"],["sample_date","Receive Date"],["test_item","Test Item"],["remark","Remark"],["orig_wc","Original WC"],["orig_wc_result","Original WC Result"],["orig_nir","Original NIR"],["orig_nir_result","Original NIR Result"],["original_result","Original (ไม่ระบุวิธี)"],
+    ["wc","WC"],["wc_round","WC ครั้งที่"],["wc_result","WC Result"],["nir","NIR"],["nir_round","NIR ครั้งที่"],["nir_result","NIR Result"],["retest_result","Re-test Result (ไม่ระบุวิธี)"],
+    ["comparison","Comparison"],["root_cause_cat","Root Cause"],["root_cause","Root Cause Detail"],["status","Status"],["updated_at","Updated"]];
+  const list = filtered().filter(r=>!fStatus||r.status===fStatus);
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const val=(r,k)=> k==="status"?STATUS[SI[r[k]]]?.t : ["wc","nir","orig_wc","orig_nir"].includes(k) ? (+r[k]?"✓":"") : r[k];
+  const csv="﻿"+[cols.map(c=>q(c[1])).join(","),...list.map(r=>cols.map(([k])=>q(val(r,k))).join(","))].join("\r\n");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=`retest_${ym(year,month)}.csv`; a.click();
+};
+
+/* import Excel — อ่านทุกชีต (รองรับไฟล์ที่แยกชีตตามเดือน) */
+let impRows=[];
+$("#btnImport").onclick=()=>{ $("#impFile").value=""; $("#impInfo").textContent=""; $("#impGo").disabled=true; $("#dlgImport").showModal(); };
+function toISO(v){
+  if(v==null||v==="") return null;
+  if(v instanceof Date){ const y=v.getFullYear(), a=v.getMonth()+1, b=v.getDate(); const [mm,dd]=b<=12?[b,a]:[a,b];
+    return `${y}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`; }
+  const m=/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/.exec(String(v).trim());
+  if(m) return `${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  return String(v).trim();
+}
+$("#impFile").onchange=async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  if(typeof XLSX==="undefined"){ $("#impInfo").textContent="โหลดตัวอ่าน Excel ไม่สำเร็จ ตรวจการเชื่อมต่ออินเทอร์เน็ต"; return; }
+  const wb=XLSX.read(await file.arrayBuffer(),{cellDates:true});
+  const map={retest_date:/re-?test\s*date/,requester:/request/,lab_no:/lab\s*no/,sample_name:/sample\s*name/,sample_date:/sample\s*date|receive/,test_item:/test\s*item/,remark:/remark/,orig_wc_result:/original.*wc/,orig_nir_result:/original.*nir/,original_result:/^\W*original(\s*result)?\W*$/,retest_result:/re-?test\s*result/,wc_result:/^(re-?test\s*)?wc/,nir_result:/^(re-?test\s*)?nir/,comparison:/compar/,root_cause:/root/};
+  impRows=[];
+  for(const name of wb.SheetNames){
+    const aoa=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:null});
+    const hi=aoa.findIndex(r=>r.some(c=>/lab\s*no/i.test(String(c||"")))); if(hi<0) continue;
+    const H=aoa[hi].map(h=>String(h||"").trim().toLowerCase());
+    const idx=Object.fromEntries(Object.entries(map).map(([k,re])=>[k,H.findIndex(h=>re.test(h))]));
+    aoa.slice(hi+1).filter(r=>r[idx.lab_no]!=null&&String(r[idx.lab_no]).trim()!=="").forEach(r=>{
+      const o={}; for(const [k,i] of Object.entries(idx)) if(i>=0) o[k]=/date/.test(k)?toISO(r[i]):(r[i]==null?null:String(r[i]));
+      if(o.wc_result) o.wc=1; if(o.nir_result) o.nir=1; if(o.orig_wc_result) o.orig_wc=1; if(o.orig_nir_result) o.orig_nir=1;
+      impRows.push(o);
+    });
+  }
+  $("#impInfo").textContent = impRows.length ? `พบ ${impRows.length} รายการ พร้อมนำเข้า` : "ไม่พบหัวคอลัมน์ Lab No. ในไฟล์";
+  $("#impGo").disabled=!impRows.length;
+};
+$("#impGo").onclick=async()=>{
+  try{ const r=await api("/import",{method:"POST",body:JSON.stringify({rows:impRows})}); $("#dlgImport").close(); toast(`นำเข้าแล้ว ${r.inserted} รายการ`); loadYear(); }
+  catch(e){ toast(e.message); }
+};
+
+boot();
+</script>
+</body>
+</html>
