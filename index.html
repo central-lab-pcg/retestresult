@@ -103,6 +103,18 @@ select.user,select.year{border:1px solid var(--line);background:var(--panel);bor
 
 .tbl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:1100px}
+td.sel,th.sel{width:36px;padding-right:0}
+td.sel input,th.sel input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer}
+tr.picked{background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
+.acts{display:flex;gap:6px;align-items:center;justify-content:flex-end}
+.del{border:1px solid transparent;background:none;border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--muted);line-height:0}
+.del:hover{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 7%,transparent)}
+.del svg{width:17px;height:17px}
+.selbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.selbar b{font-size:15px}
+.btn.bad{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:600}
+.dellist{margin:8px 0 0;padding:8px 12px;background:var(--soft);border-radius:8px;max-height:200px;overflow:auto;font-size:14px;list-style:none}
+.dellist li{padding:3px 0;border-bottom:1px dashed var(--line)} .dellist li:last-child{border:0}
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
 th{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--soft);position:sticky;top:0;white-space:nowrap}
 tbody tr{cursor:pointer}
@@ -283,9 +295,15 @@ dialog .db{max-height:70vh}
       <select id="fCmp"><option value="">ผลเปรียบเทียบทั้งหมด</option></select>
       <span class="count" id="count"></span>
     </div>
+    <div class="selbar" id="selBar" hidden>
+      <b id="selN"></b><span class="muted">เลือกไว้</span><span class="grow"></span>
+      <button class="btn sm" id="selClear">ยกเลิกการเลือก</button>
+      <button class="btn sm bad" id="selDel">ลบที่เลือก</button>
+    </div>
     <div class="tbl">
       <table>
         <thead><tr>
+          <th class="sel"><input type="checkbox" id="selAll" aria-label="เลือกทั้งหมด"></th>
           <th>Re-test date</th><th>Requested</th><th>Lab No.</th><th>Sample name</th><th>Test item</th>
           <th>Original</th><th>ผล Re-test</th>
           <th>Comparison / Root cause</th><th>สถานะ</th><th></th>
@@ -423,6 +441,15 @@ dialog .db{max-height:70vh}
   <div class="df"><button class="btn primary" id="impGo" disabled>นำเข้า</button></div>
 </dialog>
 
+<dialog id="dlgDelete">
+  <div class="dh"><h2 id="delTitle">ลบรายการ?</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
+  <div class="db">
+    <p style="margin:0">รายการต่อไปนี้จะถูกลบพร้อมประวัติการติดตาม <b>ลบแล้วกู้คืนไม่ได้</b></p>
+    <ul class="dellist" id="delList"></ul>
+  </div>
+  <div class="df"><button class="btn bad" id="delGo">ลบรายการ</button><button class="btn" data-close>ยกเลิก</button></div>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 <div class="tip" id="tip"></div>
 
@@ -448,6 +475,8 @@ let opts = {requester:[], test_item:[], comparison:["Consistent","Inconsistent",
 const NOW = new Date();
 let year = NOW.getFullYear(), month = NOW.getMonth()+1;   // เปิดที่เดือนปัจจุบัน
 let view = "list";
+const TRASH = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>`;
+const picked = new Set();
 let yearRows = [], fStatus = "", editing = null, formStatus = "check", labInfo = null;
 
 function applyTheme(){ if(cfg.theme) document.documentElement.dataset.theme=cfg.theme; else delete document.documentElement.dataset.theme; }
@@ -497,7 +526,6 @@ function originals(r){
 }
 function stamp(r){
   const d = s => s ? new Date(s).toLocaleDateString("th-TH",{day:"numeric",month:"short"}) : "";
-  if(r.status==="check") return `<div class="sm-note">รอ ${esc(r.requester||"ผู้ส่งตัวอย่าง")} เช็ค</div>`;
   if(r.checked_by) return `<div class="sm-note">เช็คโดย ${esc(r.checked_by)} ${d(r.checked_at)}</div>`;
   return "";
 }
@@ -609,7 +637,7 @@ function renderTrack(list){
      <span class="body"><span class="tag">${s.t}</span>
        <span class="row"><span class="n">${c[s.k]}</span><span class="d">${s.d}</span></span></span></button>`).join("");
 }
-function showEmpty(msg){ $("#rows").innerHTML=""; const e=$("#empty"); e.hidden=false; e.textContent=msg; $("#count").textContent=""; }
+function showEmpty(msg){ $("#rows").innerHTML=""; $("#selBar").hidden=true; const e=$("#empty"); e.hidden=false; e.textContent=msg; $("#count").textContent=""; }
 function renderAll(){ renderSheets(); renderList(); if(view==="summary") renderSummary(); }
 function renderList(){
   const all = filtered(); renderTrack(all);
@@ -617,6 +645,7 @@ function renderList(){
   $("#count").textContent = `${list.length} รายการ${fStatus?" · "+STATUS[SI[fStatus]].t:""}`;
   if(!list.length){ showEmpty(monthRows().length ? "ไม่มีรายการที่ตรงกับตัวกรอง" : `ยังไม่มีรายการ Re-test ใน${MONTHS_FULL[month-1]} ${year} · กด “เพิ่มรายการ” เพื่อเริ่มบันทึก`); return; }
   $("#empty").hidden = true;
+  setTimeout(updSel);
   $("#rows").innerHTML = list.map(r=>{
     const i = SI[r.status] ?? 0, s = STATUS[i];
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
@@ -626,7 +655,8 @@ function renderList(){
       return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span>${d!==null?`<span class="delta ${d>cfg.th?"hi":""}" title="เทียบกับ Original ${ob.m}">Δ ${d.toFixed(1)}%${ob.cross?` (เทียบ ${ob.m})`:""}</span>`:""}</div>`;
     }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"อยู่ในห้องปฏิบัติการ…":"ยังไม่ระบุวิธี"}</span>`;
-    return `<tr data-id="${r.id}">
+    return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}">
+      <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)}"></td>
       <td>${fmtDate(r.retest_date)}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
       <td>${esc(r.requester)}</td>
       <td class="lab">${esc(r.lab_no)}${r.lab_total>1?`<span class="round">Re-test ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
@@ -636,7 +666,7 @@ function renderList(){
       <td><div class="res">${resHtml}</div></td>
       <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(r.comparison||"Pending")}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
       <td class="st-${s.k}"><div class="prog"><span class="ticks">${STATUS.map((_,j)=>`<b class="${j<=i?"on":""}"></b>`).join("")}</span><span class="lbl">${s.t}</span></div>${stamp(r)}</td>
-      <td class="st-${STATUS[Math.min(i+1,3)].k}">${s.next?`<button class="adv" data-adv="${r.id}">${s.next}</button>`:""}</td>
+      <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${s.next?`<button class="adv" data-adv="${r.id}">${s.next}</button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
     </tr>`;
   }).join("");
 }
@@ -850,6 +880,9 @@ async function advance(id){
 $("#track").addEventListener("click",e=>{ const b=e.target.closest(".stage"); if(!b) return; fStatus = fStatus===b.dataset.s?"":b.dataset.s; renderList(); });
 $("#rows").addEventListener("click",e=>{
   const a=e.target.closest("[data-adv]"); if(a){ e.stopPropagation(); advance(a.dataset.adv); return; }
+  const d=e.target.closest("[data-del]"); if(d){ e.stopPropagation(); askDelete([+d.dataset.del]); return; }
+  const pk=e.target.closest("[data-pick]"); if(pk){ e.stopPropagation(); const id=+pk.dataset.pick; pk.checked?picked.add(id):picked.delete(id); pk.closest("tr").classList.toggle("picked",pk.checked); updSel(); return; }
+  if(e.target.closest("td.sel")) return;
   const tr=e.target.closest("tr[data-id]"); if(tr) openDrawer(yearRows.find(r=>r.id==tr.dataset.id));
 });
 $("#q").addEventListener("input",renderList);
@@ -868,10 +901,34 @@ $("#form").addEventListener("input",e=>{
 });
 $("#form").addEventListener("change",e=>{ if(["wc","nir","orig_wc","orig_nir"].includes(e.target.name)){ syncMethods(); if(e.target.checked) $("#form")[e.target.name+"_result"].focus(); } });
 $("#statusPick").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; formStatus=b.dataset.k; renderStatusPick(); });
-$("#dDelete").onclick=async()=>{
-  const b=$("#dDelete");
-  if(b.dataset.confirm!=="1"){ b.dataset.confirm="1"; b.textContent="กดอีกครั้งเพื่อยืนยันการลบ"; setTimeout(()=>{ b.dataset.confirm=""; b.textContent="ลบรายการ"; },3000); return; }
-  try{ await api(`/retests/${editing.id}`,{method:"DELETE"}); toast("ลบรายการแล้ว"); closeDrawer(); loadYear(); }catch(e){ toast(e.message); }
+$("#dDelete").onclick=()=>askDelete([editing.id]);
+/* ---------- ลบรายการ (ทีละรายการ / หลายรายการ) */
+let toDelete=[];
+function visibleRows(){ const all=filtered(); return fStatus ? all.filter(r=>r.status===fStatus) : all; }
+function updSel(){
+  const vis=visibleRows(); const n=vis.filter(r=>picked.has(r.id)).length;
+  $("#selBar").hidden = !n; $("#selN").textContent = `${n} รายการ`;
+  const all=$("#selAll"); all.checked = n>0 && n===vis.length; all.indeterminate = n>0 && n<vis.length;
+}
+$("#selAll").onchange=e=>{ visibleRows().forEach(r=> e.target.checked?picked.add(r.id):picked.delete(r.id)); renderList(); };
+$("#selClear").onclick=()=>{ picked.clear(); renderList(); };
+$("#selDel").onclick=()=>askDelete(visibleRows().filter(r=>picked.has(r.id)).map(r=>r.id));
+function askDelete(ids){
+  if(!ids.length) return; toDelete=ids;
+  const rs=ids.map(id=>yearRows.find(r=>r.id===id)).filter(Boolean);
+  $("#delTitle").textContent = ids.length===1 ? "ลบรายการนี้?" : `ลบ ${ids.length} รายการ?`;
+  $("#delList").innerHTML = rs.map(r=>`<li><b>${esc(r.lab_no)}</b> · ${esc(r.test_item)} · ${esc(r.sample_name||"")} <span class="muted">(${STATUS[SI[r.status]]?.t||""})</span></li>`).join("");
+  $("#delGo").disabled=false; $("#delGo").textContent = ids.length===1 ? "ลบรายการ" : `ลบ ${ids.length} รายการ`;
+  $("#dlgDelete").showModal();
+}
+$("#delGo").onclick=async()=>{
+  const b=$("#delGo"); b.disabled=true; b.textContent="กำลังลบ…";
+  let ok=0, fail=0;
+  for(const id of toDelete){ try{ await api(`/retests/${id}`,{method:"DELETE"}); ok++; picked.delete(id); }catch{ fail++; } }
+  $("#dlgDelete").close();
+  if(editing && toDelete.includes(editing.id)) closeDrawer();
+  toast(fail ? `ลบแล้ว ${ok} รายการ · ไม่สำเร็จ ${fail} รายการ` : `ลบแล้ว ${ok} รายการ`);
+  loadYear();
 };
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && $("#drawer").classList.contains("open")) closeDrawer(); });
 document.querySelectorAll("dialog [data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
