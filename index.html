@@ -1190,9 +1190,9 @@ function printSheet(rows, sendDate){
   $("#printArea").innerHTML=`<div class="sheet-doc">
     <h1>ใบส่งตัวอย่างเข้าห้องปฏิบัติการ (Re-test)</h1>
     <div class="meta">Send Sample Date: <b>${fmtDate(d)}</b> · ${labs} Lab No. · ${rows.length} Test item${$("#me").value?` · ผู้เช็คตัวอย่าง: ${esc($("#me").value)}`:""}</div>
-    <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th style="width:40px">Seq</th><th>Sample name</th><th>Receive</th><th>Test item</th><th>Remark</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
+    <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th style="width:40px">Seq</th><th>Sample name</th><th>Receive</th><th>Test item</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
     <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); if(g) no++;
-      return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(r.test_item)}</td><td>${esc(r.remark)}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
+      return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(r.test_item)}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
     <div class="signs">
       <div><b>ส่งตัวอย่าง</b>ผู้ส่งตัวอย่าง<span></span>วันที่ ........../........../..........</div>
       <div><b>&nbsp;</b>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
