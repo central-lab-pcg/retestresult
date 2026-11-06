@@ -78,7 +78,8 @@ select.user,select.year{border:1px solid var(--line);background:var(--panel);bor
 
 /* pipeline */
 /* status cards — animated feature-card style */
-.track{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:12px 0 16px}
+.track{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:12px 0 16px}
+.st-all{--c:var(--ink);--cp:#B9C4F2}
 .stage{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;min-height:196px;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--panel);text-align:left;cursor:pointer;overflow:hidden;
   transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .35s ease,border-color .2s}
 .stage::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;background:radial-gradient(circle at 72% 30%,color-mix(in srgb,var(--cp) 55%,transparent) 0%,transparent 62%)}
@@ -110,7 +111,7 @@ tr.picked{background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
 .del{border:1px solid transparent;background:none;border-radius:6px;padding:3px 6px;cursor:pointer;color:var(--muted);line-height:0}
 .del:hover{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:color-mix(in srgb,var(--bad) 7%,transparent)}
 .del svg{width:17px;height:17px}
-.selbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--bad);box-shadow:inset 4px 0 0 var(--bad)}
+.selbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;padding:9px 14px;border-radius:10px;background:var(--panel);border:1px solid var(--teal);box-shadow:inset 4px 0 0 var(--teal)}
 .selbar b{font-size:15px}
 .btn.bad{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:600}
 .dellist{margin:8px 0 0;padding:8px 12px;background:var(--soft);border-radius:8px;max-height:200px;overflow:auto;font-size:14px;list-style:none}
@@ -237,12 +238,53 @@ dialog .db{max-height:70vh}
 .chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:2px 4px 2px 10px;font-size:13px}
 .chip button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 4px}
 .addrow{display:flex;gap:6px}.addrow input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--panel)}
+.cmpPick{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.cmpLbl{width:100%;font-size:13px;color:var(--muted)}
+.tick{display:flex;align-items:center;gap:10px;flex:1 1 220px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;font-weight:600;background:var(--panel)}
+.tick input{width:20px;height:20px;accent-color:var(--teal)}
+.tick:has(input:checked){border-color:var(--teal);background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
+.tick:has(input[data-cmp=Inconsistent]:checked){border-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,var(--panel))}
+.tick:has(input[data-cmp=Inconsistent]:checked) input{accent-color:var(--bad)}
+.irow{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--panel)}
+.ihead{display:flex;gap:8px;align-items:center}
+.ihead input.iname{flex:1;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:15px;font-weight:600;min-width:0}
+.ihead .iround{font-size:12.5px;color:var(--muted);white-space:nowrap}
+.irow .mrow{grid-template-columns:90px 1fr}
+.addItem{margin-top:10px;width:100%;border:1px dashed var(--teal);color:var(--teal);background:none;border-radius:10px;padding:9px;cursor:pointer;font-weight:600}
+.addItem:hover{background:color-mix(in srgb,var(--teal) 8%,transparent)}
+.itemsHead{display:flex;align-items:baseline;gap:8px;font-size:13px;color:var(--muted)}
+.expwrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:240px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px -10px rgba(20,40,70,.35);padding:6px}
+.menu button{display:flex;flex-direction:column;align-items:flex-start;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:7px;cursor:pointer}
+.menu button:hover{background:var(--soft)}
+.menu button small{color:var(--muted);font-size:12px}
+#printArea{display:none}
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block;color:#000;font-size:10.5pt}
+  #printArea h1{font-size:16pt;margin:0}
+  #printArea .meta{color:#444;font-size:9.5pt;margin:2px 0 10px}
+  #printArea .sum{display:flex;gap:18px;flex-wrap:wrap;margin:0 0 10px;font-size:10pt}
+  #printArea table{min-width:0;width:100%;border-collapse:collapse;font-size:9pt}
+  #printArea th,#printArea td{border:1px solid #999;padding:4px 5px;text-align:left;vertical-align:top;position:static;background:none;color:#000}
+  #printArea th{background:#EEF3F8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #printArea tr{break-inside:avoid}
+  #printArea td.c{text-align:center}
+  #printArea .cb{display:inline-block;width:12px;height:12px;border:1.2px solid #000;border-radius:2px}
+  #printArea .signs{display:flex;gap:40px;margin-top:22px;break-inside:avoid}
+  #printArea .signs b{font-size:10.5pt}
+  #printArea .signs div{flex:1;display:flex;flex-direction:column;gap:6px;font-size:10pt}
+  #printArea .signs span{display:block;border-bottom:1px dotted #000;height:28px}
+}
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40}
 .toast.show{opacity:1}
 
 @media (max-width:760px){
   .wrap{padding:0 16px}
   .track{grid-template-columns:1fr 1fr;gap:10px}
+  .stage.st-all{grid-column:1/-1;min-height:120px}
   .stage{min-height:170px}
   .stage .ico{width:58px;height:58px}
   .stage .n{font-size:28px}
@@ -269,7 +311,15 @@ dialog .db{max-height:70vh}
     <span class="conn" id="conn"><i></i><span>กำลังเชื่อมต่อ…</span></span>
     <select class="user" id="me" title="ผู้ใช้งาน (บันทึกในประวัติ)"></select>
     <button class="btn" id="btnImport">นำเข้า Excel</button>
-    <button class="btn" id="btnExport">ส่งออก CSV</button>
+    <div class="expwrap">
+      <button class="btn" id="btnExport" aria-haspopup="true" aria-expanded="false">ส่งออก ▾</button>
+      <div class="menu" id="expMenu" hidden>
+        <button data-exp="xlsx-month">Excel — เดือนนี้<small>ชีตรายการ + สรุป Root cause</small></button>
+        <button data-exp="xlsx-year">Excel — ทั้งปี<small>แยกชีตตามเดือน + ชีตสรุป</small></button>
+        <button data-exp="sheet-today">ใบส่งตัวอย่าง — วันนี้<small>รายการที่ Send Sample วันนี้ (พิมพ์ / PDF)</small></button>
+        <button data-exp="pdf-month">PDF — เดือนนี้<small>เปิดหน้าพิมพ์ แล้วเลือก “บันทึกเป็น PDF”</small></button>
+      </div>
+    </div>
     <button class="btn" id="btnSettings">ตั้งค่า</button>
     <button class="btn primary" id="btnNew">เพิ่มรายการ</button>
   </header>
@@ -293,20 +343,23 @@ dialog .db{max-height:70vh}
       <select id="fItem"><option value="">Test item ทั้งหมด</option></select>
       <select id="fMethod"><option value="">ทุกวิธี</option><option value="WC">WC</option><option value="NIR">NIR</option><option value="none">ยังไม่ระบุวิธี</option></select>
       <select id="fCmp"><option value="">ผลเปรียบเทียบทั้งหมด</option></select>
+      <button class="btn sm" id="clearF" hidden>ล้างตัวกรอง</button>
       <span class="count" id="count"></span>
     </div>
     <div class="selbar" id="selBar" hidden>
       <b id="selN"></b><span class="muted">เลือกไว้</span><span class="grow"></span>
       <button class="btn sm" id="selClear">ยกเลิกการเลือก</button>
+      <button class="btn sm" id="selSheet">พิมพ์ใบส่งตัวอย่าง</button>
+      <button class="btn sm primary" id="selCheck">เช็คตัวอย่างที่เลือก</button>
       <button class="btn sm bad" id="selDel">ลบที่เลือก</button>
     </div>
     <div class="tbl">
       <table>
         <thead><tr>
           <th class="sel"><input type="checkbox" id="selAll" aria-label="เลือกทั้งหมด"></th>
-          <th>Re-test date</th><th>Requested</th><th>Lab No.</th><th>Sample name</th><th>Test item</th>
+          <th>Date</th><th>Requested</th><th>Lab No.</th><th>Sample name</th><th>Test item</th>
           <th>Original</th><th>ผล Re-test</th>
-          <th>Comparison / Root cause</th><th>สถานะ</th><th></th>
+          <th>ผลเปรียบเทียบ / Root cause</th><th>สถานะ</th><th></th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -338,15 +391,21 @@ dialog .db{max-height:70vh}
   <form class="db" id="form" autocomplete="off">
     <div class="statusPick" id="statusPick"></div>
     <div class="grid" style="margin-top:16px">
-      <label class="f">Re-test date<input type="date" name="retest_date"></label>
+      <label class="f">Date<input type="date" name="retest_date"></label>
       <label class="f">Requested (ผู้ส่งตัวอย่าง)<select name="requester"></select></label>
       <label class="f"><span class="req">Lab No.</span><input name="lab_no" required></label>
       <label class="f">Sample name<input name="sample_name"></label>
       <div class="full labhint" id="labHint"></div>
       <label class="f">Receive date<input type="date" name="sample_date"></label>
-      <label class="f"><span class="req">Test item</span><input name="test_item" list="itemList" required></label>
+      <label class="f single-only"><span class="req">Test item</span><input name="test_item" list="itemList"></label>
+      <label class="f sent-only">Send Sample Date<input type="date" name="send_date"></label>
       <label class="f full">Remark / เหตุผลที่ขอ Re-test<input name="remark"></label>
-      <fieldset class="full methods">
+      <div class="full multi-only" id="itemsBox">
+        <div class="itemsHead"><span class="req">Test item และ Original result</span><span>· Lab No. เดียวกัน Re-test ได้หลาย Item</span></div>
+        <div id="itemRows"></div>
+        <button type="button" class="addItem" id="addItem">+ เพิ่ม Test item</button>
+      </div>
+      <fieldset class="full methods single-only">
         <legend>Original result — ติ๊กวิธีของผลเดิม แล้วระบุค่า</legend>
         <div class="mrow">
           <label class="ck"><input type="checkbox" name="orig_wc"> WC</label>
@@ -385,7 +444,12 @@ dialog .db{max-height:70vh}
         </div>
       </fieldset>
       <div class="full compare phase-test" id="cmpBox"></div>
-      <label class="f phase-test">Comparison<select name="comparison"></select></label>
+      <div class="full phase-test cmpPick">
+        <span class="cmpLbl" id="cmpLbl">ผลการเปรียบเทียบ</span>
+        <input type="hidden" name="comparison">
+        <label class="tick"><input type="checkbox" data-cmp="Inconsistent"><span>ค่าวิเคราะห์เปลี่ยนแปลง</span></label>
+        <label class="tick"><input type="checkbox" data-cmp="Consistent"><span>ค่าวิเคราะห์ไม่เปลี่ยนแปลง</span></label>
+      </div>
 
       <fieldset class="full close phase-close" id="closeBox">
         <legend>Root cause (ระบุเมื่อปิดงาน)</legend>
@@ -450,6 +514,12 @@ dialog .db{max-height:70vh}
   <div class="df"><button class="btn bad" id="delGo">ลบรายการ</button><button class="btn" data-close>ยกเลิก</button></div>
 </dialog>
 
+<dialog id="dlgSheet">
+  <div class="dh"><h2>พิมพ์ใบส่งตัวอย่าง?</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
+  <div class="db"><p style="margin:0">เช็คตัวอย่างแล้ว <b id="sheetN"></b> · พิมพ์ใบส่งตัวอย่างเพื่อแนบไปกับตัวอย่างที่ส่งเข้าห้องปฏิบัติการ (เลือกเครื่องพิมพ์ หรือ “บันทึกเป็น PDF”)</p></div>
+  <div class="df"><button class="btn primary" id="sheetGo">พิมพ์ใบส่งตัวอย่าง</button><button class="btn" data-close>ไม่ต้อง</button></div>
+</dialog>
+<div id="printArea"></div>
 <div class="toast" id="toast" role="status"></div>
 <div class="tip" id="tip"></div>
 
@@ -461,6 +531,9 @@ const STATUS = [
   {k:"closed", t:"ปิดงาน", d:"ระบุ Root cause แล้ว"},
 ];
 const SI = Object.fromEntries(STATUS.map((s,i)=>[s.k,i]));
+// Comparison: เก็บค่าเดิมในฐานข้อมูล แต่แสดงเป็นภาษาไทย
+const CMP_LABEL = {Inconsistent:"ค่าวิเคราะห์เปลี่ยนแปลง", Consistent:"ค่าวิเคราะห์ไม่เปลี่ยนแปลง", Pending:"รอสรุปผล"};
+const cmpText = v => CMP_LABEL[v||"Pending"] || v;
 const MONTHS = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MONTHS_FULL = ["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const $ = s => document.querySelector(s);
@@ -525,7 +598,8 @@ function originals(r){
   return out;
 }
 function stamp(r){
-  const d = s => s ? new Date(s).toLocaleDateString("th-TH",{day:"numeric",month:"short"}) : "";
+  const d = s => s ? new Date(s).toLocaleDateString("th-TH-u-ca-gregory",{day:"numeric",month:"short"}) : "";
+  if(r.send_date) return `<div class="sm-note">Send Sample ${fmtDate(r.send_date)}${r.checked_by?` · ${esc(r.checked_by)}`:""}</div>`;
   if(r.checked_by) return `<div class="sm-note">เช็คโดย ${esc(r.checked_by)} ${d(r.checked_at)}</div>`;
   return "";
 }
@@ -543,11 +617,11 @@ async function loadOptions(){
   if(!opts.comparison.length) opts.comparison=["Consistent","Inconsistent","Pending"];
   const me=$("#me"), cur=store.get("me","");
   me.innerHTML = `<option value="">— เลือกชื่อผู้ใช้ —</option>`+opts.requester.map(v=>`<option ${v===cur?"selected":""}>${esc(v)}</option>`).join("");
-  fill($("#fReq"),"ผู้ขอทั้งหมด",opts.requester); fill($("#fItem"),"Test item ทั้งหมด",opts.test_item); fill($("#fCmp"),"ผลเปรียบเทียบทั้งหมด",opts.comparison);
+  fill($("#fReq"),"ผู้ขอทั้งหมด",opts.requester); fill($("#fItem"),"Test item ทั้งหมด",opts.test_item); $("#fCmp").innerHTML=`<option value="">ผลเปรียบเทียบทั้งหมด</option>`+["Inconsistent","Consistent","Pending"].map(v=>`<option value="${v}">${cmpText(v)}</option>`).join("");
   $("#itemList").innerHTML = opts.test_item.map(v=>`<option value="${esc(v)}">`).join("");
   const f=$("#form"), blank=list=>`<option value=""></option>`+list.map(v=>`<option>${esc(v)}</option>`).join("");
   f.requester.innerHTML = blank(opts.requester);
-  f.comparison.innerHTML = opts.comparison.map(v=>`<option>${esc(v)}</option>`).join("");
+
   f.root_cause_cat.innerHTML = `<option value="">— เลือก Root cause —</option>`+opts.root_cause.map(v=>`<option>${esc(v)}</option>`).join("");
   renderChips();
 }
@@ -578,16 +652,18 @@ function renderSheets(){
 $("#sheets").addEventListener("click",e=>{ const b=e.target.closest(".sheet"); if(!b) return; month=+b.dataset.m; fStatus=""; renderAll(); });
 
 /* ---------- list */
+const filterActive = () => !!($("#q").value.trim()||$("#fReq").value||$("#fItem").value||$("#fCmp").value||$("#fMethod").value);
 function filtered(){
-  const q=$("#q").value.trim().toLowerCase(), req=$("#fReq").value, it=$("#fItem").value, cm=$("#fCmp").value, me=$("#fMethod").value;
-  return monthRows().filter(r=>{
+  const q=$("#q").value.trim().toLowerCase(), req=$("#fReq").value, it=labKey($("#fItem").value), cm=$("#fCmp").value, me=$("#fMethod").value;
+  const base = filterActive() ? yearRows : monthRows();   // ใช้ตัวกรอง/ค้นหา = ค้นทั้งปี
+  return base.filter(r=>{
     if(req && r.requester!==req) return false;
-    if(it && r.test_item!==it) return false;
+    if(it && labKey(r.test_item)!==it) return false;
     if(cm && (r.comparison||"Pending")!==cm) return false;
     if(me==="WC" && !+r.wc) return false;
     if(me==="NIR" && !+r.nir) return false;
     if(me==="none" && (+r.wc || +r.nir)) return false;
-    if(q && ![r.lab_no,r.sample_name,r.remark,r.root_cause,r.root_cause_cat].some(v=>String(v||"").toLowerCase().includes(q))) return false;
+    if(q && ![r.lab_no,r.sample_name,r.remark,r.root_cause,r.root_cause_cat,r.test_item,r.requester].some(v=>String(v||"").toLowerCase().includes(q))) return false;
     return true;
   });
 }
@@ -622,6 +698,15 @@ const ICONS = {
     <path d="M9 27l13-10 10 9 16-15" stroke="var(--coral)" stroke-width="3.6"/>
     <path d="M42 8h13v13z" fill="var(--coral)"/>
     </svg>`,
+  all:`<svg viewBox="0 0 64 64" fill="none" stroke="var(--icl)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round">
+    <rect x="18" y="8" width="34" height="40" rx="4" fill="var(--glass)"/>
+    <rect x="14" y="13" width="34" height="40" rx="4" fill="var(--paper)"/>
+    <rect x="10" y="18" width="36" height="40" rx="4" fill="var(--paper)"/>
+    <rect x="16" y="25" width="5" height="5" rx="1.5" fill="var(--p-check)" stroke-width="2"/><path d="M25 27.5h15"/>
+    <rect x="16" y="33" width="5" height="5" rx="1.5" fill="var(--p-lab)" stroke-width="2"/><path d="M25 35.5h15"/>
+    <rect x="16" y="41" width="5" height="5" rx="1.5" fill="var(--p-result)" stroke-width="2"/><path d="M25 43.5h12"/>
+    <rect x="16" y="49" width="5" height="5" rx="1.5" fill="var(--p-closed)" stroke-width="2"/><path d="M25 51.5h9"/>
+    </svg>`,
   closed:`<svg viewBox="0 0 64 64" fill="none" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="32" cy="33" r="22" fill="var(--glass)" stroke="none" opacity=".7"/>
     <path d="M47 15.5A23 23 0 1 0 55 33" stroke="var(--icl)" stroke-width="5"/>
@@ -631,7 +716,12 @@ const ICONS = {
 };
 function renderTrack(list){
   const c = Object.fromEntries(STATUS.map(s=>[s.k,0])); list.forEach(r=>c[r.status]=(c[r.status]||0)+1);
-  $("#track").innerHTML = STATUS.map((s,i)=>`<button class="stage st-${s.k}" data-s="${s.k}" aria-pressed="${fStatus===s.k}" aria-label="${s.t} ${c[s.k]} รายการ">
+  const open = list.length - c.closed;
+  $("#track").innerHTML = `<button class="stage st-all" data-s="all" aria-pressed="${fStatus==="all"}" aria-label="รวมทุกสถานะ ${list.length} รายการ">
+     <span class="ix">รวม</span>
+     <span class="ico" aria-hidden="true">${ICONS.all}</span>
+     <span class="body"><span class="tag">รวมทุกสถานะ</span>
+       <span class="row"><span class="n">${list.length}</span><span class="d">ค้าง ${open} · ปิดแล้ว ${c.closed}</span></span></span></button>` + STATUS.map((s,i)=>`<button class="stage st-${s.k}" data-s="${s.k}" aria-pressed="${fStatus===s.k}" aria-label="${s.t} ${c[s.k]} รายการ">
      <span class="ix">0${i+1}</span>
      <span class="ico" aria-hidden="true">${ICONS[s.k]}</span>
      <span class="body"><span class="tag">${s.t}</span>
@@ -640,10 +730,12 @@ function renderTrack(list){
 function showEmpty(msg){ $("#rows").innerHTML=""; $("#selBar").hidden=true; const e=$("#empty"); e.hidden=false; e.textContent=msg; $("#count").textContent=""; }
 function renderAll(){ renderSheets(); renderList(); if(view==="summary") renderSummary(); }
 function renderList(){
-  const all = filtered(); renderTrack(all);
+  const all = filtered(); renderTrack(filterActive() ? all : monthRows());
   const list = visibleRows();   // ไม่เลือกการ์ด = แสดงเฉพาะงานที่ยังไม่ปิด
   const nClosed = all.filter(r=>r.status==="closed").length;
-  $("#count").textContent = fStatus ? `${list.length} รายการ · ${STATUS[SI[fStatus]].t}` : `ค้าง ${list.length} รายการ${nClosed?` · ปิดแล้ว ${nClosed} (กดการ์ด “ปิดงาน” เพื่อดู)`:""}`;
+  $("#clearF").hidden = !filterActive();
+  if(filterActive() && !fStatus){ $("#count").textContent = `พบ ${list.length} รายการ · ค้นทั้งปี ${year} ทุกสถานะ`; }
+  else $("#count").textContent = fStatus==="all" ? `${list.length} รายการ · รวมทุกสถานะ` : fStatus ? `${list.length} รายการ · ${STATUS[SI[fStatus]].t}` : `ค้าง ${list.length} รายการ${nClosed?` · ปิดแล้ว ${nClosed} (กดการ์ด “ปิดงาน” เพื่อดู)`:""}`;
   if(!list.length && !fStatus && nClosed && nClosed===all.length){ showEmpty(`ไม่มีงานค้างใน${MONTHS_FULL[month-1]} ✓ ปิดงานครบแล้ว ${nClosed} รายการ (กดการ์ด “ปิดงาน” เพื่อดู)`); return; }
   if(!list.length){ showEmpty(monthRows().length ? "ไม่มีรายการที่ตรงกับตัวกรอง" : `ยังไม่มีรายการ Re-test ใน${MONTHS_FULL[month-1]} ${year} · กด “เพิ่มรายการ” เพื่อเริ่มบันทึก`); return; }
   $("#empty").hidden = true;
@@ -653,19 +745,19 @@ function renderList(){
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
     const resHtml = res.length ? res.map(x=>{
-      return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` ครั้งที่ ${x.round}`:""}</span>`:""}
+      return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
-    }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"อยู่ในห้องปฏิบัติการ…":"ยังไม่ระบุวิธี"}</span>`;
+    }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`;
     return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}">
       <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)}"></td>
-      <td>${fmtDate(r.retest_date)}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
+      <td>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
       <td>${esc(r.requester)}</td>
-      <td class="lab">${esc(r.lab_no)}${r.lab_total>1?`<span class="round">Re-test ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
+      <td class="lab">${esc(r.lab_no)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
       <td>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>
       <td>${esc(r.test_item)}</td>
       <td><div class="res">${originals(r).map(x=>`<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}</span>`:""}<span class="v">${x.v?esc(x.v):'<span class="muted">—</span>'}</span></div>`).join("") || '<span class="muted">—</span>'}</div></td>
       <td><div class="res">${resHtml}</div></td>
-      <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(r.comparison||"Pending")}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
+      <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(cmpText(r.comparison))}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
       <td class="st-${s.k}"><div class="prog"><span class="ticks">${STATUS.map((_,j)=>`<b class="${j<=i?"on":""}"></b>`).join("")}</span><span class="lbl">${s.t}</span></div>${stamp(r)}</td>
       <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${s.next?`<button class="adv" data-adv="${r.id}">${s.next}</button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
     </tr>`;
@@ -689,7 +781,7 @@ function rcBars(el, data, total){
   if(!data.length){ el.innerHTML=`<div class="nodata">ยังไม่มีงานที่ปิดในเดือนนี้ — Root cause จะแสดงเมื่อปิดงาน</div>`; return; }
   const max=Math.max(...data.map(d=>d.v)), top=data[0];
   el.innerHTML = `<div class="rctop"><span class="muted">สาเหตุหลัก</span><span class="big">${esc(top.k)}</span><span class="muted">${top.v} งาน · ${Math.round(top.v/total*100)}% ของงานที่ปิด</span></div>`+
-    data.map(d=>`<div class="rcrow" style="--c:${rcColor(d.k)}" data-tip="<b>${esc(d.k)}</b>${d.v} งาน (${Math.round(d.v/total*100)}%)<br>Consistent ${d.con} · Inconsistent ${d.inc}">
+    data.map(d=>`<div class="rcrow" style="--c:${rcColor(d.k)}" data-tip="<b>${esc(d.k)}</b>${d.v} งาน (${Math.round(d.v/total*100)}%)<br>ไม่เปลี่ยนแปลง ${d.con} · เปลี่ยนแปลง ${d.inc}">
       <span class="nm"><i></i>${esc(d.k)}</span>
       <span class="tr"><b style="width:${Math.max(d.v/max*100,2)}%"></b></span>
       <span class="n"><strong>${d.v}</strong>${Math.round(d.v/total*100)}%</span></div>`).join("");
@@ -723,7 +815,7 @@ function renderSummary(){
   const inc = closed.filter(r=>r.comparison==="Inconsistent").length;
   $("#kpis").innerHTML = [
     ["Re-test ทั้งหมด", rows.length], ["ปิดงานแล้ว", closed.length], ["ค้างอยู่", rows.length-closed.length],
-    ["Inconsistent (ปิดแล้ว)", inc], ["WC / NIR", `${rows.filter(r=>+r.wc).length} / ${rows.filter(r=>+r.nir).length}`]
+    ["ค่าวิเคราะห์เปลี่ยนแปลง", inc], ["WC / NIR", `${rows.filter(r=>+r.wc).length} / ${rows.filter(r=>+r.nir).length}`]
   ].map(([l,v])=>`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div></div>`).join("");
 
   $("#rcTitle").textContent = `Root cause — ${MONTHS_FULL[month-1]} ${year}`;
@@ -745,6 +837,9 @@ document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
 /* ---------- drawer */
 function renderPhases(){
   const f=$("#form");
+  document.querySelectorAll("#form .single-only").forEach(el=>el.hidden=!editing);
+  document.querySelectorAll("#form .multi-only").forEach(el=>el.hidden=!!editing);
+  document.querySelectorAll("#form .sent-only").forEach(el=>el.hidden=!(editing && (formStatus!=="check" || editing.send_date)));
   const hasRes = editing && (+editing.wc || +editing.nir || editing.retest_result);
   const showTest = formStatus==="result" || formStatus==="closed" || !!hasRes;
   document.querySelectorAll("#form .phase-test").forEach(el=>el.hidden=!showTest);
@@ -778,18 +873,19 @@ function updRounds(){
     if(!f[m].checked){ el.textContent=""; continue; }
     let n;
     if(editing && +editing[m] && editing[m+"_round"]) n=editing[m+"_round"];
-    else if(labInfo) n=labInfo[m] - (editing && +editing[m] ? 1 : 0) + 1;
-    el.innerHTML = n ? `${M} <b>ครั้งที่ ${n}</b>` : "";
+    else if(labInfo){ const it=$("#form").test_item.value.trim().toUpperCase(); const xs=labInfo.items.filter(x=>String(x.test_item||"").trim().toUpperCase()===it && (!editing || x.id!==editing.id)); n=xs.filter(x=>x[m]).length+1; }
+    el.innerHTML = n ? `${M} <b>Re-ครั้งที่ ${n}</b>` : "";
   }
 }
 function renderLabHint(){
   const h=$("#labHint"), f=$("#form");
-  const nr=$("#nextRound"); if(nr) nr.textContent = labInfo && !editing ? ` · ครั้งนี้จะเป็น Re-test ครั้งที่ ${labInfo.total+1} ของ Lab No. นี้` : "";
+  const nr=$("#nextRound"); if(nr) nr.textContent = labInfo && !editing ? ` · Lab No. นี้ Re-test ไปแล้ว ${labInfo.total} รายการ` : "";
   if(!labInfo){ h.innerHTML=""; return; }
   const others = labInfo.items.filter(x=>!editing || x.id!==editing.id);
-  if(!others.length){ h.innerHTML = f.lab_no.value.trim() ? `Lab No. นี้ยังไม่เคย Re-test · ครั้งนี้เป็นครั้งแรก` : ""; return; }
-  const wc=others.filter(x=>x.wc).length, nir=others.filter(x=>x.nir).length;
-  h.innerHTML = `Lab No. นี้เคย Re-test แล้ว <b>${others.length} ครั้ง</b> (WC ${wc} · NIR ${nir}) — ${others.slice(-4).map(x=>`${fmtDate(x.eff_date)} ${esc(x.test_item)}${x.wc?` WC#${x.wc_round}`:""}${x.nir?` NIR#${x.nir_round}`:""}`).join(", ")}`;
+  if(!others.length){ h.innerHTML = f.lab_no.value.trim() ? `Lab No. นี้ยังไม่เคย Re-test · ครั้งนี้เป็น Re-ครั้งที่ 1` : ""; return; }
+  const by={}; others.forEach(x=>{ (by[x.test_item] ||= []).push(x); });
+  h.innerHTML = `Lab No. นี้เคย Re-test แล้ว <b>${others.length} รายการ</b> — ` + Object.entries(by).map(([it,xs])=>`<b>${esc(it)}</b> ${xs.length} ครั้ง${xs.some(x=>x.wc)?` (WC ${xs.filter(x=>x.wc).length})`:""}${xs.some(x=>x.nir)?` (NIR ${xs.filter(x=>x.nir).length})`:""}`).join(" · ");
+  updItemRounds();
 }
 let labT;
 async function lookupLab(){
@@ -806,7 +902,7 @@ function updCompare(){
   if(!parts.length){ $("#cmpBox").innerHTML=`<span class="muted">กรอก Original และผล Re-test เพื่อดูความต่าง (เทียบวิธีเดียวกันก่อน)</span>`; return; }
   const mx=Math.max(...parts.map(p=>p[1]));
   $("#cmpBox").innerHTML = parts.map(([M,d])=>`<span>Δ ${M} <b style="color:${d>cfg.th?"var(--bad)":"var(--good)"}">${d.toFixed(2)}%</b></span>`).join("")+
-    `<span class="muted">${mx>cfg.th?"เกินเกณฑ์ "+cfg.th+"% — น่าจะ Inconsistent":"อยู่ในเกณฑ์ "+cfg.th+"% — น่าจะ Consistent"}</span>`;
+    `<span class="muted">${mx>cfg.th?"เกินเกณฑ์ "+cfg.th+"% — น่าจะเป็นค่าวิเคราะห์เปลี่ยนแปลง":"อยู่ในเกณฑ์ "+cfg.th+"% — น่าจะเป็นค่าวิเคราะห์ไม่เปลี่ยนแปลง"}</span>`;
 }
 async function openDrawer(rec, presetStatus){
   editing = rec || null; labInfo = null;
@@ -815,6 +911,8 @@ async function openDrawer(rec, presetStatus){
   const t=new Date(), iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
   const v = rec || {retest_date:iso, requester:$("#me").value, comparison:"Pending"};
   for(const el of f.elements){ if(!el.name || el.name==="note") continue; if(el.type==="checkbox") el.checked=!!+v[el.name]; else el.value=v[el.name] ?? ""; }
+  if(!rec){ $("#itemRows").innerHTML=""; addItemRow(); }
+  setCmp(v.comparison||"Pending");
   $("#legacyRow").hidden = !(rec && rec.retest_result);
   $("#legacyOrig").hidden = !(rec && rec.original_result);
   formStatus = presetStatus || rec?.status || "check";
@@ -823,34 +921,33 @@ async function openDrawer(rec, presetStatus){
   $("#dDelete").hidden = !rec; $("#histWrap").hidden = !rec;
   $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden","false"); $("#scrim").classList.add("open");
   if(rec){ $("#hist").innerHTML='<li class="muted">กำลังโหลด…</li>'; loadHist(rec.id); lookupLab(); } else setTimeout(()=>f.lab_no.focus(),50);
+  $("#dTitle").textContent = rec ? `Lab No. ${rec.lab_no} · ${rec.test_item}` : "เพิ่มรายการ Re-test";
 }
 function closeDrawer(){ $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("open"); editing=null; }
+const FIELD_TH={retest_date:"Date",requester:"Requested",lab_no:"Lab No.",sample_name:"Sample name",sample_date:"Receive date",send_date:"Send Sample Date",test_item:"Test item",remark:"Remark",original_result:"Original",orig_wc:"Original WC",orig_wc_result:"ค่า Original WC",orig_nir:"Original NIR",orig_nir_result:"ค่า Original NIR",wc:"WC",wc_result:"ผล WC",nir:"NIR",nir_result:"ผล NIR",retest_result:"ผล Re-test",comparison:"ผลเปรียบเทียบ",root_cause_cat:"Root cause",root_cause:"รายละเอียด Root cause"};
+const fieldNames = t => t.startsWith("แก้ไข: ") ? "แก้ไข: "+t.slice(7).split(", ").map(k=>FIELD_TH[k]||k).join(", ") : t;
 async function loadHist(id){
   try{
     const h = await api(`/retests/${id}/history`);
-    const when = s => { const d=new Date(s.replace(" ","T")+"Z"); return isNaN(d)?s:d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}); };
+    const when = s => { const d=new Date(s.replace(" ","T")+"Z"); return isNaN(d)?s:d.toLocaleString("th-TH-u-ca-gregory",{dateStyle:"medium",timeStyle:"short"}); };
     const name = k => STATUS[SI[k]]?.t || k;
     $("#hist").innerHTML = h.map(x=>{
       const txt = x.action==="create" ? `สร้างรายการ (${name(x.to_status)})` : x.action==="status" ? `${name(x.from_status)} → <b>${name(x.to_status)}</b>` : "แก้ไขข้อมูล";
-      return `<li style="--c:${x.to_status?`var(--s-${x.to_status})`:"var(--line)"}">${txt}${x.note?`<div>${esc(x.note)}</div>`:""}<div class="w">${when(x.at)}${x.by_user?" · "+esc(x.by_user):""}</div></li>`;
+      return `<li style="--c:${x.to_status?`var(--s-${x.to_status})`:"var(--line)"}">${txt}${x.note?`<div>${esc(fieldNames(x.note))}</div>`:""}<div class="w">${when(x.at)}${x.by_user?" · "+esc(x.by_user):""}</div></li>`;
     }).join("") || '<li class="muted">ไม่มีประวัติ</li>';
   }catch(e){ $("#hist").innerHTML=`<li>${esc(e.message)}</li>`; }
 }
 async function save(){
   const f=$("#form");
+  if(!editing) return saveNew();
   if(!f.lab_no.value.trim()||!f.test_item.value.trim()){ toast("กรุณากรอก Lab No. และ Test item"); return; }
   const data={}; for(const el of f.elements) if(el.name) data[el.name] = el.type==="checkbox" ? (el.checked?1:0) : el.value;
   data.status = formStatus;
-  if(editing && editing.status==="check" && formStatus!=="check"){
-    const me=$("#me").value;
-    if(!me){ toast("เลือกชื่อผู้ใช้ที่มุมขวาบนก่อน เพื่อบันทึกว่าใครเช็คตัวอย่าง"); return; }
-    if(editing.requester && me!==editing.requester){ toast(`ต้องให้ ${editing.requester} (ผู้ส่งตัวอย่าง) เป็นคนเช็คตัวอย่าง`); return; }
-  }
   const done = formStatus==="result"||formStatus==="closed";
   if((data.orig_wc && !data.orig_wc_result) || (data.orig_nir && !data.orig_nir_result)){ toast("Original ติ๊ก WC/NIR แล้ว ต้องระบุค่าด้วย"); return; }
   if(done && ((data.wc && !data.wc_result) || (data.nir && !data.nir_result))){ toast("ติ๊ก WC/NIR แล้ว ต้องระบุค่าผลด้วย"); return; }
   if(done && !data.wc && !data.nir && !data.retest_result){ toast("ติ๊ก WC หรือ NIR และระบุค่าผล ก่อนส่งตรวจผล"); return; }
-  if(formStatus==="closed" && data.comparison==="Pending"){ toast("ก่อนปิดงาน ให้เลือก Comparison เป็น Consistent หรือ Inconsistent"); f.comparison.focus(); return; }
+  if(formStatus==="closed" && data.comparison==="Pending"){ toast("ก่อนปิดงาน ให้ติ๊ก “ค่าวิเคราะห์เปลี่ยนแปลง” หรือ “ค่าวิเคราะห์ไม่เปลี่ยนแปลง”"); $("#cmpLbl").scrollIntoView({block:"center"}); return; }
   if(formStatus==="closed" && !data.root_cause_cat){ toast("ก่อนปิดงาน ให้ระบุ Root cause ว่าเกิดอะไรขึ้น"); f.root_cause_cat.focus(); return; }
   try{
     const saved = editing ? await api(`/retests/${editing.id}`,{method:"PUT",body:JSON.stringify(data)})
@@ -867,15 +964,173 @@ async function advance(id){
   const to = STATUS[i+1].k;
   const res = results(r);
   if(to==="result"){ openDrawer(r,"result"); toast("ติ๊ก WC / NIR แล้วกรอกค่าผล Re-test"); return; }
-  if(to==="closed" && (!r.comparison||r.comparison==="Pending"||!r.root_cause_cat)){ openDrawer(r,"closed"); toast("เลือก Comparison และระบุ Root cause ก่อนปิดงาน"); $("#form").root_cause_cat.focus(); return; }
-  if(to==="lab"){
-    const me=$("#me").value;
-    if(!me){ toast("เลือกชื่อผู้ใช้ที่มุมขวาบนก่อน เพื่อบันทึกว่าใครเป็นคนเช็คตัวอย่าง"); $("#me").focus(); return; }
-    if(r.requester && me!==r.requester){ toast(`ต้องให้ ${r.requester} (ผู้ส่งตัวอย่าง) เป็นคนกดเช็คตัวอย่าง`); return; }
+  if(to==="closed" && (!r.comparison||r.comparison==="Pending"||!r.root_cause_cat)){ openDrawer(r,"closed"); toast("ติ๊กผลการเปรียบเทียบ และระบุ Root cause ก่อนปิดงาน"); $("#form").root_cause_cat.focus(); return; }
+  if(to==="lab"){   // เช็คตัวอย่าง = เช็คทั้ง Lab No. (ทุก Test item ที่รอเช็ค) พร้อมบันทึก Send Sample Date
+    const key=labKey(r.lab_no);
+    const same=yearRows.filter(x=>x.status==="check" && labKey(x.lab_no)===key && x.eff_date===r.eff_date);  // คำขอเดียวกัน (Lab No. + Date)
+    try{
+      for(const x of same) await api(`/retests/${x.id}`,{method:"PATCH",body:JSON.stringify({status:"lab"})});
+      toast(`เช็คตัวอย่างแล้ว · Lab No. ${r.lab_no}${same.length>1?` (${same.length} Test item)`:""} · บันทึก Send Sample Date วันนี้`);
+      await loadYear(); offerSheet(yearRows.filter(x=>same.some(t=>t.id===x.id)));
+    }catch(e){ toast(e.message); }
+    return;
   }
   try{ await api(`/retests/${id}`,{method:"PATCH",body:JSON.stringify({status:to})}); toast(to==="lab"?"เช็คตัวอย่างแล้ว · ส่งเข้าห้องปฏิบัติการ":`เปลี่ยนเป็น “${STATUS[i+1].t}” แล้ว`); loadYear(); }
   catch(e){ toast(e.message); }
 }
+
+function setCmp(v){ $("#form").comparison.value=v; document.querySelectorAll("[data-cmp]").forEach(c=>c.checked=c.dataset.cmp===v); }
+document.querySelectorAll("[data-cmp]").forEach(c=>c.addEventListener("change",()=>setCmp(c.checked?c.dataset.cmp:"Pending")));
+/* ---------- เพิ่มหลาย Test item ใน Lab No. เดียว */
+const labKey = v => String(v||"").trim().toUpperCase();
+function addItemRow(name=""){
+  const d=document.createElement("div"); d.className="irow";
+  d.innerHTML=`<div class="ihead"><input class="iname" list="itemList" placeholder="Test item เช่น CP" value="${esc(name)}"><span class="iround"></span><button type="button" class="del irm" title="เอา Test item นี้ออก" aria-label="เอาออก">${TRASH}</button></div>
+    <div class="mrow"><label class="ck"><input type="checkbox" class="iwc"> WC</label><input class="val iwcv" inputmode="decimal" placeholder="ค่า Original WC" disabled></div>
+    <div class="mrow"><label class="ck"><input type="checkbox" class="inir"> NIR</label><input class="val inirv" inputmode="decimal" placeholder="ค่า Original NIR" disabled></div>`;
+  $("#itemRows").appendChild(d); updItemRounds(); return d;
+}
+function updItemRounds(){
+  const rows=[...document.querySelectorAll("#itemRows .irow")];
+  rows.forEach(r=>{ r.querySelector(".irm").hidden = rows.length<2;
+    const it=labKey(r.querySelector(".iname").value), el=r.querySelector(".iround");
+    if(!it || !labInfo){ el.textContent=""; return; }
+    const n=labInfo.items.filter(x=>labKey(x.test_item)===it).length+1;
+    el.textContent = `Re-ครั้งที่ ${n}`; });
+}
+$("#addItem").onclick=()=>addItemRow().querySelector(".iname").focus();
+$("#itemRows").addEventListener("click",e=>{ const b=e.target.closest(".irm"); if(b){ b.closest(".irow").remove(); updItemRounds(); } });
+$("#itemRows").addEventListener("change",e=>{
+  const c=e.target; if(c.classList.contains("iwc")||c.classList.contains("inir")){
+    const v=c.closest(".mrow").querySelector(".val"); v.disabled=!c.checked; if(!c.checked) v.value=""; else v.focus(); }
+});
+$("#itemRows").addEventListener("input",e=>{ if(e.target.classList.contains("iname")) updItemRounds(); });
+async function saveNew(){
+  const f=$("#form");
+  if(!f.lab_no.value.trim()){ toast("กรุณากรอก Lab No."); f.lab_no.focus(); return; }
+  const rows=[...document.querySelectorAll("#itemRows .irow")].map(r=>({
+    name:r.querySelector(".iname").value.trim(),
+    wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(),
+    nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim(), el:r }));
+  const items=rows.filter(r=>r.name);
+  if(!items.length){ toast("กรุณากรอก Test item อย่างน้อย 1 รายการ"); rows[0]?.el.querySelector(".iname").focus(); return; }
+  const dup=items.map(r=>labKey(r.name)).find((k,i,a)=>a.indexOf(k)!==i);
+  if(dup){ toast(`Test item “${dup}” ซ้ำกัน`); return; }
+  const miss=items.find(r=>(r.wc&&!r.wcv)||(r.nir&&!r.nirv));
+  if(miss){ toast(`${miss.name}: ติ๊ก WC/NIR แล้ว ต้องระบุค่า Original`); return; }
+  const base={retest_date:f.retest_date.value, requester:f.requester.value, lab_no:f.lab_no.value.trim(), sample_name:f.sample_name.value, sample_date:f.sample_date.value, remark:f.remark.value, status:"check", comparison:"Pending"};
+  const b=$("#dSave"); b.disabled=true;
+  let ok=0, saved=null;
+  try{
+    for(const it of items){
+      saved = await api("/retests",{method:"POST",body:JSON.stringify({...base, test_item:it.name, orig_wc:it.wc?1:0, orig_wc_result:it.wcv, orig_nir:it.nir?1:0, orig_nir_result:it.nirv})});
+      ok++;
+    }
+    closeDrawer();
+    const sy=+(saved.eff_date||"").slice(0,4), sm=+(saved.eff_date||"").slice(5,7);
+    if(sy && sm && (sy!==year || sm!==month)){ year=sy; month=sm; }
+    toast(`เพิ่มแล้ว ${ok} Test item · Lab No. ${base.lab_no}`);
+  }catch(e){ toast(`${e.message}${ok?` (บันทึกไปแล้ว ${ok} รายการ)`:""}`); }
+  finally{ b.disabled=false; loadYear(); }
+}
+
+/* ---------- ส่งออก Excel / PDF */
+const expMenu=$("#expMenu");
+$("#btnExport").onclick=e=>{ e.stopPropagation(); expMenu.hidden=!expMenu.hidden; $("#btnExport").setAttribute("aria-expanded",!expMenu.hidden); };
+document.addEventListener("click",e=>{ if(!expMenu.hidden && !e.target.closest(".expwrap")) expMenu.hidden=true; });
+expMenu.addEventListener("click",e=>{ const b=e.target.closest("[data-exp]"); if(!b) return; expMenu.hidden=true;
+  ({"xlsx-month":()=>exportExcel(false), "xlsx-year":()=>exportExcel(true), "pdf-month":exportPDF, "sheet-today":()=>{
+    const t=todayISO(); const rows=yearRows.filter(r=>r.send_date===t);
+    if(!rows.length){ toast("วันนี้ยังไม่มีรายการที่กดเช็คตัวอย่าง"); return; } printSheet(rows, t); }})[b.dataset.exp](); });
+function exportRows(rows){ return (fStatus && fStatus!=="all") ? rows.filter(r=>r.status===fStatus) : rows; }
+const resText = list => list.map(x=>`${x.m?x.m+(x.round?` Re-ครั้งที่ ${x.round}`:"")+" ":""}${x.v??""}`).join(" / ");
+function recordObj(r){
+  return {
+    "Date": fmtDate(r.retest_date), "Requested": r.requester||"", "Lab No.": r.lab_no||"", "Sample Name": r.sample_name||"",
+    "Receive Date": fmtDate(r.sample_date), "Send Sample Date": fmtDate(r.send_date), "Test Item": r.test_item||"", "Remark": r.remark||"",
+    "Original WC": +r.orig_wc ? (r.orig_wc_result||"") : "", "Original NIR": +r.orig_nir ? (r.orig_nir_result||"") : "", "Original (ไม่ระบุวิธี)": r.original_result||"",
+    "WC Re-ครั้งที่": +r.wc ? (r.wc_round||"") : "", "Re-test WC": +r.wc ? (r.wc_result||"") : "",
+    "NIR Re-ครั้งที่": +r.nir ? (r.nir_round||"") : "", "Re-test NIR": +r.nir ? (r.nir_result||"") : "",
+    "ผลการเปรียบเทียบ": r.comparison ? cmpText(r.comparison) : "", "Root Cause": r.root_cause_cat||"", "Root Cause Detail": r.root_cause||"",
+    "Status": STATUS[SI[r.status]]?.t||r.status, "เช็คโดย": r.checked_by||"",
+  };
+}
+function sheetFrom(rows){
+  const data=rows.slice().sort((a,b)=>(a.eff_date||"").localeCompare(b.eff_date||"")||a.id-b.id).map(recordObj);
+  const ws=XLSX.utils.json_to_sheet(data.length?data:[recordObj({})]);
+  if(!data.length) XLSX.utils.sheet_add_aoa(ws,[[]],{origin:1});
+  ws["!cols"]=Object.keys(recordObj({})).map(k=>({wch:Math.min(60, Math.max(10, k.length+2, ...data.map(d=>String(d[k]).length+2)))}));
+  return ws;
+}
+function rcSummarySheet(rowsByMonth){
+  const cats=[...new Set([...opts.root_cause, ...rowsByMonth.flatMap(m=>m.rows.filter(r=>r.status==="closed").map(r=>r.root_cause_cat||NO_RC))])];
+  const head=["Root Cause", ...rowsByMonth.map(m=>m.label), "รวม"];
+  const body=cats.map(c=>{ const v=rowsByMonth.map(m=>m.rows.filter(r=>r.status==="closed" && (r.root_cause_cat||NO_RC)===c).length); return [c,...v,v.reduce((a,b)=>a+b,0)]; }).filter(r=>r[r.length-1]>0);
+  const tot=["รวมงานที่ปิด", ...rowsByMonth.map(m=>m.rows.filter(r=>r.status==="closed").length)]; tot.push(tot.slice(1).reduce((a,b)=>a+b,0));
+  const all=["Re-test ทั้งหมด", ...rowsByMonth.map(m=>m.rows.length)]; all.push(all.slice(1).reduce((a,b)=>a+b,0));
+  const ws=XLSX.utils.aoa_to_sheet([head,...body,[],tot,all]); ws["!cols"]=[{wch:34},...head.slice(1).map(()=>({wch:12}))]; return ws;
+}
+function exportExcel(wholeYear){
+  if(typeof XLSX==="undefined"){ toast("โหลดตัวสร้าง Excel ไม่สำเร็จ ตรวจการเชื่อมต่ออินเทอร์เน็ต"); return; }
+  const wb=XLSX.utils.book_new(), months=[];
+  if(wholeYear){
+    for(let m=1;m<=12;m++){ const rows=exportRows(yearRows.filter(r=>(r.eff_date||"").slice(0,7)===ym(year,m))); if(rows.length) months.push({label:`${MONTHS[m-1]} ${year}`, rows}); }
+    if(!months.length){ toast(`ไม่มีข้อมูลในปี ${year}`); return; }
+    XLSX.utils.book_append_sheet(wb, rcSummarySheet(months), "สรุป Root cause");
+    months.forEach(m=>XLSX.utils.book_append_sheet(wb, sheetFrom(m.rows), m.label));
+    XLSX.writeFile(wb, `Retest_${year}.xlsx`);
+  }else{
+    const rows=exportRows(filtered()); if(!rows.length){ toast("ไม่มีข้อมูลให้ส่งออก"); return; }
+    const label=`${MONTHS[month-1]} ${year}`;
+    XLSX.utils.book_append_sheet(wb, sheetFrom(rows), label);
+    XLSX.utils.book_append_sheet(wb, rcSummarySheet([{label,rows}]), "สรุป Root cause");
+    XLSX.writeFile(wb, `Retest_${ym(year,month)}.xlsx`);
+  }
+  toast("ส่งออก Excel แล้ว");
+}
+function exportPDF(){
+  const rows=exportRows(filtered()).slice().sort((a,b)=>(a.eff_date||"").localeCompare(b.eff_date||"")||a.id-b.id);
+  if(!rows.length){ toast("ไม่มีข้อมูลให้ส่งออก"); return; }
+  const cnt=k=>rows.filter(r=>r.status===k).length;
+  const rc=rcList(rows);
+  const now=new Date().toLocaleString("th-TH-u-ca-gregory",{dateStyle:"medium",timeStyle:"short"});
+  $("#printArea").innerHTML=`<h1>Chemical Testing Re-test Record — ${MONTHS_FULL[month-1]} ${year}</h1>
+    <div class="meta">พิมพ์เมื่อ ${now}${$("#me").value?` · โดย ${esc($("#me").value)}`:""} · ${rows.length} รายการ${fStatus && fStatus!=="all"?` · สถานะ: ${STATUS[SI[fStatus]].t}`:""}</div>
+    <div class="sum">${STATUS.map(s=>`<span>${s.t}: <b>${cnt(s.k)}</b></span>`).join("")}${rc.length?`<span>Root cause: ${rc.map(x=>`${esc(x.k)} <b>${x.v}</b>`).join(", ")}</span>`:""}</div>
+    <table><thead><tr><th>Date</th><th>Requested</th><th>Lab No.</th><th>Sample</th><th>Receive</th><th>Send Sample</th><th>Test Item</th><th>Original</th><th>Re-test</th><th>ผลเปรียบเทียบ</th><th>Root Cause</th><th>Status</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td>${fmtDate(r.retest_date)}</td><td>${esc(r.requester)}</td><td><b>${esc(r.lab_no)}</b></td><td>${esc(r.sample_name)}</td><td>${fmtDate(r.sample_date)}</td><td>${fmtDate(r.send_date)}</td><td>${esc(r.test_item)}</td>
+      <td>${esc(resText(originals(r)))}</td><td>${esc(resText(results(r)))}</td><td>${esc(cmpText(r.comparison))}</td><td>${esc(r.root_cause_cat||"")}${r.root_cause?`<br><small>${esc(r.root_cause)}</small>`:""}</td><td>${STATUS[SI[r.status]]?.t||""}</td></tr>`).join("")}</tbody></table>`;
+  doPrint();
+}
+let printing=false;
+function doPrint(){ if(printing) return; printing=true; setTimeout(()=>{ window.print(); setTimeout(()=>printing=false,800); },150); }
+/* ---------- ใบส่งตัวอย่าง */
+const todayISO = () => { const t=new Date(); return `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`; };
+let sheetRows=[];
+function offerSheet(rows){ sheetRows=rows; $("#sheetN").textContent=`${rows.length} รายการ`; $("#dlgSheet").showModal(); }
+$("#sheetGo").onclick=()=>{ $("#dlgSheet").close(); printSheet(sheetRows); };
+function printSheet(rows, sendDate){
+  rows=rows.slice().sort((a,b)=>labKey(a.lab_no).localeCompare(labKey(b.lab_no))||String(a.test_item).localeCompare(String(b.test_item)));
+  const d = sendDate || rows.map(r=>r.send_date).filter(Boolean).sort().pop() || todayISO();
+  const labs=new Set(rows.map(r=>labKey(r.lab_no))).size;
+  const box='<span class="cb"></span>';
+  $("#printArea").innerHTML=`<div class="sheet-doc">
+    <h1>ใบส่งตัวอย่างเข้าห้องปฏิบัติการ (Re-test)</h1>
+    <div class="meta">Send Sample Date: <b>${fmtDate(d)}</b> · ${labs} Lab No. · ${rows.length} Test item${$("#me").value?` · ผู้เช็คตัวอย่าง: ${esc($("#me").value)}`:""}</div>
+    <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th>Sample name</th><th>Receive</th><th>Test item</th><th>Remark</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(r.lab_no)}</b></td><td>${esc(r.sample_name)}</td><td>${fmtDate(r.sample_date)}</td><td>${esc(r.test_item)}</td><td>${esc(r.remark)}</td><td class="c">${box}</td><td class="c">${box}</td></tr>`).join("")}</tbody></table>
+    <div class="signs">
+      <div><b>ส่งตัวอย่าง</b>ผู้ส่งตัวอย่าง<span></span>วันที่ ........../........../..........</div>
+      <div><b>&nbsp;</b>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
+    </div>
+    <div class="signs">
+      <div><b>ส่งคืนตัวอย่าง</b>ผู้ส่งคืนตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
+      <div><b>&nbsp;</b>ผู้รับตัวอย่างคืนแล้ว<span></span>วันที่ ........../........../..........</div>
+    </div>
+  </div>`;
+  doPrint();
+}
+window.addEventListener("afterprint",()=>{ $("#printArea").innerHTML=""; });
 
 /* ---------- events */
 $("#track").addEventListener("click",e=>{ const b=e.target.closest(".stage"); if(!b) return; fStatus = fStatus===b.dataset.s?"":b.dataset.s; renderList(); });
@@ -887,6 +1142,7 @@ $("#rows").addEventListener("click",e=>{
   const tr=e.target.closest("tr[data-id]"); if(tr) openDrawer(yearRows.find(r=>r.id==tr.dataset.id));
 });
 $("#q").addEventListener("input",renderList);
+$("#clearF").onclick=()=>{ ["#q","#fReq","#fItem","#fCmp","#fMethod"].forEach(x=>$(x).value=""); renderList(); };
 ["#fReq","#fItem","#fCmp","#fMethod"].forEach(s=>$(s).addEventListener("change",renderList));
 $("#me").addEventListener("change",e=>store.set("me",e.target.value));
 $("#btnNew").onclick=()=>openDrawer(null);
@@ -905,7 +1161,7 @@ $("#statusPick").addEventListener("click",e=>{ const b=e.target.closest("button"
 $("#dDelete").onclick=()=>askDelete([editing.id]);
 /* ---------- ลบรายการ (ทีละรายการ / หลายรายการ) */
 let toDelete=[];
-function visibleRows(){ const all=filtered(); return fStatus ? all.filter(r=>r.status===fStatus) : all.filter(r=>r.status!=="closed"); }
+function visibleRows(){ const all=filtered(); return (fStatus==="all" || (!fStatus && filterActive())) ? all : fStatus ? all.filter(r=>r.status===fStatus) : all.filter(r=>r.status!=="closed"); }
 function updSel(){
   const vis=visibleRows(); const n=vis.filter(r=>picked.has(r.id)).length;
   $("#selBar").hidden = !n; $("#selN").textContent = `${n} รายการ`;
@@ -913,6 +1169,22 @@ function updSel(){
 }
 $("#selAll").onchange=e=>{ visibleRows().forEach(r=> e.target.checked?picked.add(r.id):picked.delete(r.id)); renderList(); };
 $("#selClear").onclick=()=>{ picked.clear(); renderList(); };
+$("#selCheck").onclick=async()=>{
+  const sel=visibleRows().filter(r=>picked.has(r.id));
+  const todo=sel.filter(r=>r.status==="check");
+  if(!todo.length){ toast("รายการที่เลือกไม่มีตัวที่รอเช็คตัวอย่าง"); return; }
+  const b=$("#selCheck"); b.disabled=true;
+  let ok=0;
+  try{ for(const r of todo){ await api(`/retests/${r.id}`,{method:"PATCH",body:JSON.stringify({status:"lab"})}); ok++; } }
+  catch(e){ toast(e.message); }
+  b.disabled=false;
+  await loadYear();
+  const done=yearRows.filter(r=>todo.some(t=>t.id===r.id));
+  picked.clear(); renderList();
+  toast(`เช็คตัวอย่างแล้ว ${ok} รายการ · ส่งเข้าห้องปฏิบัติการ`);
+  if(ok) offerSheet(done);
+};
+$("#selSheet").onclick=()=>{ const sel=visibleRows().filter(r=>picked.has(r.id)); if(sel.length) printSheet(sel); };
 $("#selDel").onclick=()=>askDelete(visibleRows().filter(r=>picked.has(r.id)).map(r=>r.id));
 function askDelete(ids){
   if(!ids.length) return; toDelete=ids;
@@ -956,16 +1228,7 @@ $("#dlgSettings").addEventListener("click",async e=>{
 });
 
 /* export CSV — เดือนที่เปิดอยู่ */
-$("#btnExport").onclick=()=>{
-  const cols=[["retest_date","Re-test Date"],["requester","Requested"],["lab_no","Lab No."],["sample_name","Sample Name"],["sample_date","Receive Date"],["test_item","Test Item"],["remark","Remark"],["orig_wc","Original WC"],["orig_wc_result","Original WC Result"],["orig_nir","Original NIR"],["orig_nir_result","Original NIR Result"],["original_result","Original (ไม่ระบุวิธี)"],
-    ["wc","WC"],["wc_round","WC ครั้งที่"],["wc_result","WC Result"],["nir","NIR"],["nir_round","NIR ครั้งที่"],["nir_result","NIR Result"],["retest_result","Re-test Result (ไม่ระบุวิธี)"],
-    ["comparison","Comparison"],["root_cause_cat","Root Cause"],["root_cause","Root Cause Detail"],["status","Status"],["updated_at","Updated"]];
-  const list = filtered().filter(r=>!fStatus||r.status===fStatus);
-  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const val=(r,k)=> k==="status"?STATUS[SI[r[k]]]?.t : ["wc","nir","orig_wc","orig_nir"].includes(k) ? (+r[k]?"✓":"") : r[k];
-  const csv="﻿"+[cols.map(c=>q(c[1])).join(","),...list.map(r=>cols.map(([k])=>q(val(r,k))).join(","))].join("\r\n");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"})); a.download=`retest_${ym(year,month)}.csv`; a.click();
-};
+/* (CSV เดิมถูกแทนด้วยเมนูส่งออก Excel / PDF) */
 
 /* import Excel — อ่านทุกชีต (รองรับไฟล์ที่แยกชีตตามเดือน) */
 let impRows=[];
