@@ -287,6 +287,8 @@ dialog .db{max-height:70vh}
   #printArea th{background:#EEF3F8!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #printArea tr{break-inside:avoid}
   #printArea td.c{text-align:center}
+  #printArea td[rowspan]{vertical-align:middle}
+  #printArea tr.gs td{border-top:1.6px solid #000}
   #printArea .cb{display:inline-block;width:12px;height:12px;border:1.2px solid #000;border-radius:2px}
   #printArea .signs{display:flex;gap:40px;margin-top:22px;break-inside:avoid}
   #printArea .signs b{font-size:10.5pt}
@@ -775,11 +777,11 @@ function renderList(){
     }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`;
     const rs = n => n>1 ? ` rowspan="${n}"` : "";
     const allPicked = gIds.every(id=>picked.has(id));
-    return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}${gSpan?" gstart":""}">
-      <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)} ${esc(r.test_item)}"></td>
-      ${gSpan?`<td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
+    return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}">
+      ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>
+      <td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
       <td class="mg"${rs(gSpan)}>${esc(r.requester)}</td>
-      <td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<label class="picklab"><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""}> เลือกทั้ง Lab (${gSpan})</label>`:""}</td>`:""}
+      <td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<span class="round">${gSpan} รายการ</span>`:""}</td>`:""}
       ${sSpan?`<td class="mg"${rs(sSpan)}>${r.seq?`<b>${esc(r.seq)}</b>`:'<span class="muted">—</span>'}</td>
       <td class="mg"${rs(sSpan)}>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>`:""}
       <td>${esc(r.test_item)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
@@ -1139,7 +1141,7 @@ function exportExcel(wholeYear){
   toast("ส่งออก Excel แล้ว");
 }
 function exportPDF(){
-  const rows=exportRows(filtered()).slice().sort((a,b)=>(a.eff_date||"").localeCompare(b.eff_date||"")||a.id-b.id);
+  const rows=exportRows(filtered()).slice().sort(pdfSort);
   if(!rows.length){ toast("ไม่มีข้อมูลให้ส่งออก"); return; }
   const cnt=k=>rows.filter(r=>r.status===k).length;
   const rc=rcList(rows);
@@ -1148,10 +1150,16 @@ function exportPDF(){
     <div class="meta">พิมพ์เมื่อ ${now}${$("#me").value?` · โดย ${esc($("#me").value)}`:""} · ${rows.length} รายการ${fStatus && fStatus!=="all"?` · สถานะ: ${STATUS[SI[fStatus]].t}`:""}</div>
     <div class="sum">${STATUS.map(s=>`<span>${s.t}: <b>${cnt(s.k)}</b></span>`).join("")}${rc.length?`<span>Root cause: ${rc.map(x=>`${esc(x.k)} <b>${x.v}</b>`).join(", ")}</span>`:""}</div>
     <table><thead><tr><th>Date</th><th>Requested</th><th>Lab No.</th><th>Seq</th><th>Sample</th><th>Receive</th><th>Send Sample</th><th>Test Item</th><th>Original</th><th>Re-test</th><th>ผลเปรียบเทียบ</th><th>Root Cause</th><th>Status</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr><td>${fmtDate(r.retest_date)}</td><td>${esc(r.requester)}</td><td><b>${esc(r.lab_no)}</b></td><td>${esc(r.seq||"")}</td><td>${esc(r.sample_name)}</td><td>${fmtDate(r.sample_date)}</td><td>${fmtDate(r.send_date)}</td><td>${esc(r.test_item)}</td>
-      <td>${esc(resText(originals(r)))}</td><td>${esc(resText(results(r)))}</td><td>${esc(cmpText(r.comparison))}</td><td>${esc(r.root_cause_cat||"")}${r.root_cause?`<br><small>${esc(r.root_cause)}</small>`:""}</td><td>${STATUS[SI[r.status]]?.t||""}</td></tr>`).join("")}</tbody></table>`;
+    <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); return `<tr class="${g?"gs":""}">${g?`<td${RS(g)}>${fmtDate(r.retest_date)}</td><td${RS(g)}>${esc(r.requester)}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td><td${RS(q)}>${fmtDate(r.send_date)}</td>`:""}<td>${esc(r.test_item)}</td>
+      <td>${esc(resText(originals(r)))}</td><td>${esc(resText(results(r)))}</td><td>${esc(cmpText(r.comparison))}</td><td>${esc(r.root_cause_cat||"")}${r.root_cause?`<br><small>${esc(r.root_cause)}</small>`:""}</td><td>${STATUS[SI[r.status]]?.t||""}</td></tr>`; }).join("")}</tbody></table>`;
   doPrint();
 }
+// สำหรับ merge แถวใน PDF: คืนจำนวนแถวที่รวม (0 = แถวนี้ถูกรวมไว้กับแถวบน)
+const pdfGroup = r => `${labKey(r.lab_no)}|${r.eff_date}|${r.requester||""}`;
+const pdfSeq = r => `${pdfGroup(r)}|${r.seq??""}|${r.sample_name||""}|${r.sample_date||""}`;
+function spanOf(rows,key,i){ if(i>0 && key(rows[i-1])===key(rows[i])) return 0; let n=1; while(i+n<rows.length && key(rows[i+n])===key(rows[i])) n++; return n; }
+const RS = n => n>1 ? ` rowspan="${n}"` : "";
+const pdfSort = (a,b)=>(a.eff_date||"").localeCompare(b.eff_date||"")||labKey(a.lab_no).localeCompare(labKey(b.lab_no))||String(a.requester||"").localeCompare(String(b.requester||""))||((parseInt(a.seq)||0)-(parseInt(b.seq)||0))||a.id-b.id;
 let printing=false;
 function doPrint(){ if(printing) return; printing=true; setTimeout(()=>{ window.print(); setTimeout(()=>printing=false,800); },150); }
 /* ---------- ใบส่งตัวอย่าง */
@@ -1160,7 +1168,8 @@ let sheetRows=[];
 function offerSheet(rows){ sheetRows=rows; $("#sheetN").textContent=`${rows.length} รายการ`; $("#dlgSheet").showModal(); }
 $("#sheetGo").onclick=()=>{ $("#dlgSheet").close(); printSheet(sheetRows); };
 function printSheet(rows, sendDate){
-  rows=rows.slice().sort((a,b)=>labKey(a.lab_no).localeCompare(labKey(b.lab_no))||((parseInt(a.seq)||0)-(parseInt(b.seq)||0))||String(a.test_item).localeCompare(String(b.test_item)));
+  rows=rows.slice().sort((a,b)=>labKey(a.lab_no).localeCompare(labKey(b.lab_no))||(a.eff_date||"").localeCompare(b.eff_date||"")||((parseInt(a.seq)||0)-(parseInt(b.seq)||0))||String(a.test_item).localeCompare(String(b.test_item)));
+  let no=0;
   const d = sendDate || rows.map(r=>r.send_date).filter(Boolean).sort().pop() || todayISO();
   const labs=new Set(rows.map(r=>labKey(r.lab_no))).size;
   const box='<span class="cb"></span>';
@@ -1168,7 +1177,8 @@ function printSheet(rows, sendDate){
     <h1>ใบส่งตัวอย่างเข้าห้องปฏิบัติการ (Re-test)</h1>
     <div class="meta">Send Sample Date: <b>${fmtDate(d)}</b> · ${labs} Lab No. · ${rows.length} Test item${$("#me").value?` · ผู้เช็คตัวอย่าง: ${esc($("#me").value)}`:""}</div>
     <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th style="width:40px">Seq</th><th>Sample name</th><th>Receive</th><th>Test item</th><th>Remark</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
-    <tbody>${rows.map((r,i)=>`<tr><td class="c">${i+1}</td><td><b>${esc(r.lab_no)}</b></td><td class="c">${esc(r.seq||"")}</td><td>${esc(r.sample_name)}</td><td>${fmtDate(r.sample_date)}</td><td>${esc(r.test_item)}</td><td>${esc(r.remark)}</td><td class="c">${box}</td><td class="c">${box}</td></tr>`).join("")}</tbody></table>
+    <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); if(g) no++;
+      return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(r.test_item)}</td><td>${esc(r.remark)}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
     <div class="signs">
       <div><b>ส่งตัวอย่าง</b>ผู้ส่งตัวอย่าง<span></span>วันที่ ........../........../..........</div>
       <div><b>&nbsp;</b>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
