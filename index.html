@@ -105,6 +105,13 @@ select.user,select.year{border:1px solid var(--line);background:var(--panel);bor
 .tbl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:1100px}
 td.sel,th.sel{width:36px;padding-right:0}
+td.mg{vertical-align:top;padding-top:12px;background:var(--panel)}
+tr.picked td.mg{background:var(--panel)}
+tbody tr.gstart td{border-top:2px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
+tbody tr:first-child.gstart td{border-top:0}
+tbody td.mg{border-right:1px solid var(--line)}
+.picklab{display:flex;align-items:center;gap:5px;margin-top:6px;font-size:12px;font-weight:400;color:var(--muted);cursor:pointer;white-space:nowrap}
+.picklab input{width:14px;height:14px;accent-color:var(--teal)}
 td.sel input,th.sel input{width:17px;height:17px;accent-color:var(--teal);cursor:pointer}
 tr.picked{background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
 .acts{display:flex;gap:6px;align-items:center;justify-content:flex-end}
@@ -749,27 +756,38 @@ function renderList(){
   if(!list.length){ showEmpty(monthRows().length ? "ไม่มีรายการที่ตรงกับตัวกรอง" : `ยังไม่มีรายการ Re-test ใน${MONTHS_FULL[month-1]} ${year} · กด “เพิ่มรายการ” เพื่อเริ่มบันทึก`); return; }
   $("#empty").hidden = true;
   setTimeout(updSel);
-  $("#rows").innerHTML = list.map(r=>{
+  // รวมแถว (merge) ที่เป็นคำขอเดียวกัน: Lab No. + Date + Requested และรวม Seq เดียวกัน
+  const gk = r => `${labKey(r.lab_no)}|${r.eff_date}|${r.requester||""}`;
+  const sk = r => `${gk(r)}|${r.seq??""}|${r.sample_name||""}|${r.sample_date||""}`;
+  const span=(arr,key,i)=>{ if(i>0 && key(arr[i-1])===key(arr[i])) return 0; let n=1; while(i+n<arr.length && key(arr[i+n])===key(arr[i])) n++; return n; };
+  const checkBtnShown=new Set();
+  $("#rows").innerHTML = list.map((r,idx)=>{
+    const gSpan=span(list,gk,idx), sSpan=span(list,sk,idx);
+    const gIds=list.filter(x=>gk(x)===gk(r)).map(x=>x.id);
     const i = SI[r.status] ?? 0, s = STATUS[i];
+    let showAdv = !!s.next;
+    if(r.status==="check"){ if(checkBtnShown.has(gk(r))) showAdv=false; else checkBtnShown.add(gk(r)); }
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
     const resHtml = res.length ? res.map(x=>{
       return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
     }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`;
-    return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}">
-      <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)}"></td>
-      <td>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
-      <td>${esc(r.requester)}</td>
-      <td class="lab">${esc(r.lab_no)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
-      <td>${r.seq?`<b>${esc(r.seq)}</b>`:'<span class="muted">—</span>'}</td>
-      <td>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>
-      <td>${esc(r.test_item)}</td>
+    const rs = n => n>1 ? ` rowspan="${n}"` : "";
+    const allPicked = gIds.every(id=>picked.has(id));
+    return `<tr data-id="${r.id}" class="${picked.has(r.id)?"picked":""}${gSpan?" gstart":""}">
+      <td class="sel"><input type="checkbox" data-pick="${r.id}" ${picked.has(r.id)?"checked":""} aria-label="เลือก ${esc(r.lab_no)} ${esc(r.test_item)}"></td>
+      ${gSpan?`<td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
+      <td class="mg"${rs(gSpan)}>${esc(r.requester)}</td>
+      <td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<label class="picklab"><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""}> เลือกทั้ง Lab (${gSpan})</label>`:""}</td>`:""}
+      ${sSpan?`<td class="mg"${rs(sSpan)}>${r.seq?`<b>${esc(r.seq)}</b>`:'<span class="muted">—</span>'}</td>
+      <td class="mg"${rs(sSpan)}>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>`:""}
+      <td>${esc(r.test_item)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
       <td><div class="res">${originals(r).map(x=>`<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}</span>`:""}<span class="v">${x.v?esc(x.v):'<span class="muted">—</span>'}</span></div>`).join("") || '<span class="muted">—</span>'}</div></td>
       <td><div class="res">${resHtml}</div></td>
       <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(cmpText(r.comparison))}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
       <td class="st-${s.k}"><div class="prog"><span class="ticks">${STATUS.map((_,j)=>`<b class="${j<=i?"on":""}"></b>`).join("")}</span><span class="lbl">${s.t}</span></div>${stamp(r)}</td>
-      <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${s.next?`<button class="adv" data-adv="${r.id}">${s.next}</button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
+      <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${showAdv?`<button class="adv" data-adv="${r.id}"${r.status==="check"?` title="เช็คทุก Seq / Test item ของ Lab No. ${esc(r.lab_no)} ในคำขอนี้"`:""}>${s.next}</button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
     </tr>`;
   }).join("");
 }
@@ -1169,6 +1187,8 @@ $("#track").addEventListener("click",e=>{ const b=e.target.closest(".stage"); if
 $("#rows").addEventListener("click",e=>{
   const a=e.target.closest("[data-adv]"); if(a){ e.stopPropagation(); advance(a.dataset.adv); return; }
   const d=e.target.closest("[data-del]"); if(d){ e.stopPropagation(); askDelete([+d.dataset.del]); return; }
+  const pl=e.target.closest("[data-picklab]"); if(pl){ e.stopPropagation(); const ids=pl.dataset.picklab.split(",").map(Number); ids.forEach(id=> pl.checked?picked.add(id):picked.delete(id)); renderList(); return; }
+  if(e.target.closest(".picklab")){ e.stopPropagation(); return; }
   const pk=e.target.closest("[data-pick]"); if(pk){ e.stopPropagation(); const id=+pk.dataset.pick; pk.checked?picked.add(id):picked.delete(id); pk.closest("tr").classList.toggle("picked",pk.checked); updSel(); return; }
   if(e.target.closest("td.sel")) return;
   const tr=e.target.closest("tr[data-id]"); if(tr) openDrawer(yearRows.find(r=>r.id==tr.dataset.id));
