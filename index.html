@@ -257,6 +257,9 @@ dialog .db{max-height:70vh}
 .sg2>label,.sval>.vl{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .sg2 input.slab,.sg2 input.sseq,.sg2 input.sname{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:15px;min-width:0;color:var(--ink)}
 .sg2 input.sseq{font-weight:700;font-size:16px}
+.sleft{display:flex;flex-direction:column;gap:12px}
+.sleft>label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.sg2 input.srecv{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:15px;min-width:0;color:var(--ink)}
 .sg2 input.slab[readonly]{background:var(--soft);color:var(--muted)}
 .sval .irow{margin-top:6px;padding:8px 10px}
 .sval .irow .mrow{grid-template-columns:72px 1fr}
@@ -418,7 +421,7 @@ dialog .db{max-height:70vh}
     <div class="statusPick" id="statusPick"></div>
     <div class="grid" style="margin-top:16px">
       <label class="f">Date<input type="date" name="retest_date"></label>
-      <label class="f">Receive date<input type="date" name="sample_date"></label>
+      <label class="f single-only">Receive date<input type="date" name="sample_date"></label>
       <label class="f single-only"><span class="req">Lab No.</span><input name="lab_no"></label>
       <label class="f single-only">Seq<input name="seq" inputmode="numeric"></label>
       <label class="f single-only">Sample name<input name="sample_name"></label>
@@ -1027,11 +1030,13 @@ function addSeqGroup(){
   const next=(used.length?Math.max(...used):0)+1;
   const g=document.createElement("div"); g.className="sgrp";
   const first=!seqGroups().length, lab=$("#form").lab_no.value;
+  const prevRecv = first ? "" : (seqGroups().at(-1).querySelector(".srecv").value || "");
   g.innerHTML=`${first?"":`<button type="button" class="del srm" title="เอาตัวอย่างนี้ออก" aria-label="เอาตัวอย่างนี้ออก">${TRASH}</button>`}
     <div class="sg2">
       <label><span class="req">Lab No.</span><input class="slab" value="${esc(lab)}" ${first?'placeholder="เช่น 9988"':'readonly title="ใช้ Lab No. เดียวกับตัวอย่างแรก"'}></label>
       <label>Seq<input class="sseq" inputmode="numeric" value="${next}"></label>
-      <label>Sample name<input class="sname" placeholder="เช่น YC"></label>
+      <div class="sleft"><label>Sample name<input class="sname" placeholder="เช่น YC"></label>
+        <label>Receive date<input class="srecv" type="date" value="${esc(prevRecv)}"></label></div>
       <div class="sval"><span class="vl"><span class="req">ค่าวิเคราะห์ (Test item + Original)</span></span><div class="sitems"></div>
         <button type="button" class="addItem sadd">+ เพิ่ม Test item</button></div>
     </div>`;
@@ -1073,7 +1078,7 @@ $("#seqGroups").addEventListener("input",e=>{
 async function saveNew(){
   const f=$("#form");
   if(!f.lab_no.value.trim()){ toast("กรุณากรอก Lab No."); $("#seqGroups .slab")?.focus(); return; }
-  const groups=seqGroups().map(g=>({ g, seq:String(g.querySelector(".sseq").value).trim(), name:g.querySelector(".sname").value.trim(),
+  const groups=seqGroups().map(g=>({ g, seq:String(g.querySelector(".sseq").value).trim(), name:g.querySelector(".sname").value.trim(), recv:g.querySelector(".srecv").value,
     items:[...g.querySelectorAll(".irow")].map(r=>({ name:r.querySelector(".iname").value.trim(),
       wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(),
       nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim() })).filter(x=>x.name) }));
@@ -1084,12 +1089,12 @@ async function saveNew(){
     const d=gr.items.map(x=>labKey(x.name)).find((k,i,a)=>a.indexOf(k)!==i); if(d){ toast(`Seq ${gr.seq}: Test item “${d}” ซ้ำกัน`); return; }
     const m=gr.items.find(x=>(x.wc&&!x.wcv)||(x.nir&&!x.nirv)); if(m){ toast(`Seq ${gr.seq} · ${m.name}: ติ๊ก WC/NIR แล้ว ต้องระบุค่า Original`); return; }
   }
-  const base={retest_date:f.retest_date.value, requester:f.requester.value, lab_no:f.lab_no.value.trim(), sample_date:f.sample_date.value, remark:f.remark.value, status:"check", comparison:"Pending"};
+  const base={retest_date:f.retest_date.value, requester:f.requester.value, lab_no:f.lab_no.value.trim(), remark:f.remark.value, status:"check", comparison:"Pending"};
   const b=$("#dSave"); b.disabled=true;
   let ok=0, saved=null;
   try{
     for(const gr of groups) for(const it of gr.items){
-      saved = await api("/retests",{method:"POST",body:JSON.stringify({...base, seq:gr.seq, sample_name:gr.name, test_item:it.name, orig_wc:it.wc?1:0, orig_wc_result:it.wcv, orig_nir:it.nir?1:0, orig_nir_result:it.nirv})});
+      saved = await api("/retests",{method:"POST",body:JSON.stringify({...base, seq:gr.seq, sample_name:gr.name, sample_date:gr.recv, test_item:it.name, orig_wc:it.wc?1:0, orig_wc_result:it.wcv, orig_nir:it.nir?1:0, orig_nir_result:it.nirv})});
       ok++;
     }
     closeDrawer();
