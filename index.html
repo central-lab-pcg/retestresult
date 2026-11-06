@@ -184,7 +184,7 @@ details.tv td,details.tv th{padding:4px 8px}
 /* drawer */
 .scrim{position:fixed;inset:0;background:rgba(10,20,25,.38);opacity:0;pointer-events:none;transition:opacity .18s}
 .scrim.open{opacity:1;pointer-events:auto}
-aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;z-index:5}
+aside.drawer{position:fixed;top:0;right:0;bottom:0;width:min(720px,100%);background:var(--panel);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;z-index:5}
 aside.drawer.open{transform:none}
 .dh{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line)}
 .dh h2{margin:0;font-size:18px}
@@ -252,7 +252,16 @@ dialog .db{max-height:70vh}
 .tick:has(input:checked){border-color:var(--teal);background:color-mix(in srgb,var(--teal) 8%,var(--panel))}
 .tick:has(input[data-cmp=Inconsistent]:checked){border-color:var(--bad);background:color-mix(in srgb,var(--bad) 7%,var(--panel))}
 .tick:has(input[data-cmp=Inconsistent]:checked) input{accent-color:var(--bad)}
-.sgrp{border:1.5px solid var(--teal);border-radius:12px;padding:12px;margin-top:12px;background:color-mix(in srgb,var(--teal) 4%,var(--panel))}
+.sgrp{position:relative;border:1.5px solid var(--teal);border-radius:12px;padding:12px;margin-top:4px;margin-bottom:12px;background:color-mix(in srgb,var(--teal) 4%,var(--panel))}
+.sg2{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;align-items:start}
+.sg2>label,.sval>.vl{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
+.sg2 input.slab,.sg2 input.sseq,.sg2 input.sname{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:15px;min-width:0;color:var(--ink)}
+.sg2 input.sseq{font-weight:700;font-size:16px}
+.sg2 input.slab[readonly]{background:var(--soft);color:var(--muted)}
+.sval .irow{margin-top:6px;padding:8px 10px}
+.sval .irow .mrow{grid-template-columns:72px 1fr}
+.sgrp .srm{position:absolute;top:6px;right:6px}
+@media (max-width:760px){ .sg2{grid-template-columns:1fr} }
 .shead{display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:end}
 .shead label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 .shead input{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 10px;font-size:15px;min-width:0}
@@ -409,20 +418,19 @@ dialog .db{max-height:70vh}
     <div class="statusPick" id="statusPick"></div>
     <div class="grid" style="margin-top:16px">
       <label class="f">Date<input type="date" name="retest_date"></label>
-      <label class="f">Requested (ผู้ส่งตัวอย่าง)<select name="requester"></select></label>
-      <label class="f"><span class="req">Lab No.</span><input name="lab_no" required></label>
+      <label class="f">Receive date<input type="date" name="sample_date"></label>
+      <label class="f single-only"><span class="req">Lab No.</span><input name="lab_no"></label>
       <label class="f single-only">Seq<input name="seq" inputmode="numeric"></label>
       <label class="f single-only">Sample name<input name="sample_name"></label>
-      <div class="full labhint" id="labHint"></div>
-      <label class="f">Receive date<input type="date" name="sample_date"></label>
       <label class="f single-only"><span class="req">Test item</span><input name="test_item" list="itemList"></label>
-      <label class="f sent-only">Send Sample Date<input type="date" name="send_date"></label>
-      <label class="f full">Remark / เหตุผลที่ขอ Re-test<input name="remark"></label>
       <div class="full multi-only" id="itemsBox">
-        <div class="itemsHead"><span class="req">ตัวอย่าง (Seq) และ Test item</span><span>· Lab No. เดียวมีได้หลาย Seq แต่ละ Seq มีได้หลาย Test item</span></div>
         <div id="seqGroups"></div>
-        <button type="button" class="addItem addSeq" id="addSeq">+ เพิ่มตัวอย่าง (Seq ถัดไป)</button>
+        <button type="button" class="addItem addSeq" id="addSeq">+ เพิ่มตัวอย่าง (Seq ถัดไป) ใน Lab No. เดียวกัน</button>
       </div>
+      <div class="full labhint" id="labHint"></div>
+      <label class="f full">Remark / เหตุผลที่ขอ Re-test<input name="remark"></label>
+      <label class="f">Requested (ผู้ส่งตัวอย่าง)<select name="requester"></select></label>
+      <label class="f sent-only">Send Sample Date<input type="date" name="send_date"></label>
       <fieldset class="full methods single-only">
         <legend>Original result — ติ๊กวิธีของผลเดิม แล้วระบุค่า</legend>
         <div class="mrow">
@@ -950,7 +958,7 @@ async function openDrawer(rec, presetStatus){
   if(rec){ for(const m of ["wc","nir","orig_wc","orig_nir"]) if(+rec[m]) f[m+"_result"].value = rec[m+"_result"]||""; updCompare(); }
   $("#dDelete").hidden = !rec; $("#histWrap").hidden = !rec;
   $("#drawer").classList.add("open"); $("#drawer").setAttribute("aria-hidden","false"); $("#scrim").classList.add("open");
-  if(rec){ $("#hist").innerHTML='<li class="muted">กำลังโหลด…</li>'; loadHist(rec.id); lookupLab(); } else setTimeout(()=>f.lab_no.focus(),50);
+  if(rec){ $("#hist").innerHTML='<li class="muted">กำลังโหลด…</li>'; loadHist(rec.id); lookupLab(); } else setTimeout(()=>$("#seqGroups .slab")?.focus(),50);
   $("#dTitle").textContent = rec ? `Lab No. ${rec.lab_no} · ${rec.test_item}` : "เพิ่มรายการ Re-test";
 }
 function closeDrawer(){ $("#drawer").classList.remove("open"); $("#drawer").setAttribute("aria-hidden","true"); $("#scrim").classList.remove("open"); editing=null; }
@@ -1018,11 +1026,15 @@ function addSeqGroup(){
   const used=seqGroups().map(g=>parseInt(g.querySelector(".sseq").value)||0);
   const next=(used.length?Math.max(...used):0)+1;
   const g=document.createElement("div"); g.className="sgrp";
-  g.innerHTML=`<div class="shead"><label>Seq<input class="sseq" inputmode="numeric" value="${next}"></label>
+  const first=!seqGroups().length, lab=$("#form").lab_no.value;
+  g.innerHTML=`${first?"":`<button type="button" class="del srm" title="เอาตัวอย่างนี้ออก" aria-label="เอาตัวอย่างนี้ออก">${TRASH}</button>`}
+    <div class="sg2">
+      <label><span class="req">Lab No.</span><input class="slab" value="${esc(lab)}" ${first?'placeholder="เช่น 9988"':'readonly title="ใช้ Lab No. เดียวกับตัวอย่างแรก"'}></label>
+      <label>Seq<input class="sseq" inputmode="numeric" value="${next}"></label>
       <label>Sample name<input class="sname" placeholder="เช่น YC"></label>
-      <button type="button" class="del srm" title="เอาตัวอย่างนี้ออก" aria-label="เอาตัวอย่างนี้ออก">${TRASH}</button></div>
-    <div class="sitems"></div>
-    <button type="button" class="addItem sadd">+ เพิ่ม Test item ใน Seq นี้</button>`;
+      <div class="sval"><span class="vl"><span class="req">ค่าวิเคราะห์ (Test item + Original)</span></span><div class="sitems"></div>
+        <button type="button" class="addItem sadd">+ เพิ่ม Test item</button></div>
+    </div>`;
   $("#seqGroups").appendChild(g); addItemRow(g); updItemRounds(); return g;
 }
 function addItemRow(g, name=""){
@@ -1035,7 +1047,7 @@ function addItemRow(g, name=""){
 function updItemRounds(){
   const gs=seqGroups();
   gs.forEach(g=>{
-    g.querySelector(".srm").hidden = gs.length<2;
+
     const seq=String(g.querySelector(".sseq").value).trim();
     const rows=[...g.querySelectorAll(".irow")];
     rows.forEach(r=>{ r.querySelector(".irm").hidden = rows.length<2;
@@ -1055,10 +1067,12 @@ $("#seqGroups").addEventListener("change",e=>{
   const c=e.target; if(c.classList.contains("iwc")||c.classList.contains("inir")){
     const v=c.closest(".mrow").querySelector(".val"); v.disabled=!c.checked; if(!c.checked) v.value=""; else v.focus(); }
 });
-$("#seqGroups").addEventListener("input",e=>{ if(e.target.matches(".iname,.sseq")) updItemRounds(); });
+$("#seqGroups").addEventListener("input",e=>{
+  if(e.target.matches(".slab")){ const v=e.target.value; $("#form").lab_no.value=v; document.querySelectorAll("#seqGroups .slab").forEach(x=>{ if(x!==e.target) x.value=v; }); clearTimeout(labT); labT=setTimeout(lookupLab,300); }
+  if(e.target.matches(".iname,.sseq")) updItemRounds(); });
 async function saveNew(){
   const f=$("#form");
-  if(!f.lab_no.value.trim()){ toast("กรุณากรอก Lab No."); f.lab_no.focus(); return; }
+  if(!f.lab_no.value.trim()){ toast("กรุณากรอก Lab No."); $("#seqGroups .slab")?.focus(); return; }
   const groups=seqGroups().map(g=>({ g, seq:String(g.querySelector(".sseq").value).trim(), name:g.querySelector(".sname").value.trim(),
     items:[...g.querySelectorAll(".irow")].map(r=>({ name:r.querySelector(".iname").value.trim(),
       wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(),
