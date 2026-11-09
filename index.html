@@ -14,6 +14,7 @@
   --teal:#0E7C7B; --teal-ink:#FFFFFF;
   --s-check:#C8692A; --s-lab:#A07C0C; --s-result:#2F6FBF; --s-closed:#2F8A4E;
   --p-check:#F7B98B; --p-lab:#F3D77A; --p-result:#9CC7F2; --p-closed:#9FD8B0;
+  --rewc:#C2A8F0; --rewc-bg:#F6F1FE; --renir:#F2D263; --renir-bg:#FFF8DE;
   --icl:#34414F; --paper:#F6F3EE; --glass:#E9EEF3; --grey:#C3CBD4; --coral:#F4A0A0; --mint:#9FD9C9;
   --bad:#B4362F; --good:#3F7D4E; --na:#A9B5BB;
   --wc:#1F6FA8; --nir:#8A5A14;
@@ -24,6 +25,7 @@
   --teal:#3FB3B1; --teal-ink:#06201F;
   --s-check:#F2A56C; --s-lab:#EBC95A; --s-result:#86B9EE; --s-closed:#86CF9C;
   --p-check:#E9A271; --p-lab:#E5C866; --p-result:#86B4E4; --p-closed:#8BC79C;
+  --rewc:#9A80D8; --rewc-bg:#262241; --renir:#C9A93E; --renir-bg:#2E2A17;
   --icl:#0E1C2E; --paper:#E9E4DC; --glass:#C9D3DE; --grey:#9AA6B3; --coral:#E79090; --mint:#8CC8B8;
   --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
 }}
@@ -32,6 +34,7 @@
   --teal:#3FB3B1; --teal-ink:#06201F;
   --s-check:#F2A56C; --s-lab:#EBC95A; --s-result:#86B9EE; --s-closed:#86CF9C;
   --p-check:#E9A271; --p-lab:#E5C866; --p-result:#86B4E4; --p-closed:#8BC79C;
+  --rewc:#9A80D8; --rewc-bg:#262241; --renir:#C9A93E; --renir-bg:#2E2A17;
   --icl:#0E1C2E; --paper:#E9E4DC; --glass:#C9D3DE; --grey:#9AA6B3; --coral:#E79090; --mint:#8CC8B8;
   --bad:#EE7A72; --good:#6DBB80; --na:#5C6E76; --wc:#6CB2E6; --nir:#E0A85A;
 }
@@ -105,6 +108,26 @@ select.user,select.year{border:1px solid var(--line);background:var(--panel);bor
 .tbl{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:auto}
 table{width:100%;border-collapse:collapse;min-width:1100px}
 td.sel,th.sel{width:36px;padding-right:0}
+tr.re-wc td:not(.mg){background-color:var(--rewc-bg)}
+tr.re-nir td:not(.mg){background-color:var(--renir-bg)}
+tr.re-both td:not(.mg){background-image:linear-gradient(90deg,var(--rewc-bg),var(--renir-bg))}
+tr.re-wc td.ti{box-shadow:inset 5px 0 0 var(--rewc)}
+tr.re-nir td.ti{box-shadow:inset 5px 0 0 var(--renir)}
+tr.re-both td.ti{box-shadow:inset 5px 0 0 var(--rewc),inset 10px 0 0 var(--renir)}
+td.ti{padding-left:16px}
+.retag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:20px;white-space:nowrap;color:var(--ink)}
+.retag.WC{background:var(--rewc)} .retag.NIR{background:var(--renir)}
+.relegend{display:inline-flex;gap:12px;align-items:center;margin-left:6px}
+.rechips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.rechip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);cursor:pointer;font-weight:700;color:var(--ink);font-size:13.5px;background:var(--panel)}
+.rechip input{width:16px;height:16px;margin:0}
+.rechip.wc input{accent-color:#8E6BD8} .rechip.nir input{accent-color:#C9A21E}
+.rechip.wc:has(input:checked){background:var(--rewc);border-color:var(--rewc)}
+.rechip.nir:has(input:checked){background:var(--renir);border-color:var(--renir)}
+fieldset.methods.novals .mrow .val, fieldset.methods.novals .mrow .rd{display:none}
+fieldset.methods.novals{display:flex;gap:10px;flex-wrap:wrap}
+fieldset.methods.novals .mrow{display:block;padding:2px 0;border:0}
+fieldset.methods .rechip{justify-self:start}
 td.mg{vertical-align:top;padding-top:12px;background:var(--panel)}
 tr.picked td.mg{background:var(--panel)}
 tbody tr.gstart td{border-top:2px solid color-mix(in srgb,var(--teal) 35%,var(--line))}
@@ -394,7 +417,7 @@ dialog .db{max-height:70vh}
       </table>
       <div class="empty" id="empty" hidden></div>
     </div>
-    <p class="muted" style="font-size:12.5px;margin:10px 0 30px">แสดงเฉพาะงานที่ยังไม่ปิด · งานที่ปิดแล้วดูได้ที่การ์ด “ปิดงาน” · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 30px"><span class="relegend"><span class="retag WC">RE WC</span><span class="retag NIR">RE NIR</span></span> · แสดงเฉพาะงานที่ยังไม่ปิด · งานที่ปิดแล้วดูได้ที่การ์ด “ปิดงาน” · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
   </section>
 
   <section id="vSummary" hidden>
@@ -454,15 +477,15 @@ dialog .db{max-height:70vh}
       </fieldset>
 
       <div class="full waitbox" id="waitBox">x<b id="waitBtn"></b> ที่รายการ<span id="nextRound"></span></div>
-      <fieldset class="full methods phase-test">
-        <legend>ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า</legend>
+      <fieldset class="full methods" id="reBox">
+        <legend id="reLegend">ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า</legend>
         <div class="mrow">
-          <label class="ck"><input type="checkbox" name="wc"> WC</label>
+          <label class="rechip wc"><input type="checkbox" name="wc"> RE WC</label>
           <input class="val" name="wc_result" inputmode="decimal" placeholder="ค่าผล WC" disabled>
           <span class="rd" id="wcRound"></span>
         </div>
         <div class="mrow">
-          <label class="ck"><input type="checkbox" name="nir"> NIR</label>
+          <label class="rechip nir"><input type="checkbox" name="nir"> RE NIR</label>
           <input class="val" name="nir_result" inputmode="decimal" placeholder="ค่าผล NIR" disabled>
           <span class="rd" id="nirRound"></span>
         </div>
@@ -783,19 +806,20 @@ function renderList(){
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
     const resHtml = res.length ? res.map(x=>{
-      return `<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
+      return `<div class="mres">${x.m?`<span class="retag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
     }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`;
     const rs = n => n>1 ? ` rowspan="${n}"` : "";
     const allPicked = gIds.every(id=>picked.has(id));
-    return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}">
+    const reCls = +r.wc && +r.nir ? " re re-both" : +r.wc ? " re re-wc" : +r.nir ? " re re-nir" : "";
+    return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}${reCls}">
       ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>
       <td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
       <td class="mg"${rs(gSpan)}>${esc(r.requester)}</td>
       <td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<span class="round">${gSpan} รายการ</span>`:""}</td>`:""}
       ${sSpan?`<td class="mg"${rs(sSpan)}>${r.seq?`<b>${esc(r.seq)}</b>`:'<span class="muted">—</span>'}</td>
       <td class="mg"${rs(sSpan)}>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>`:""}
-      <td>${esc(r.test_item)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
+      <td class="ti">${esc(r.test_item)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
       <td><div class="res">${originals(r).map(x=>`<div class="mres">${x.m?`<span class="mtag ${x.m}">${x.m}</span>`:""}<span class="v">${x.v?esc(x.v):'<span class="muted">—</span>'}</span></div>`).join("") || '<span class="muted">—</span>'}</div></td>
       <td><div class="res">${resHtml}</div></td>
       <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(cmpText(r.comparison))}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
@@ -881,9 +905,12 @@ function renderPhases(){
   document.querySelectorAll("#form .single-only").forEach(el=>el.hidden=!editing);
   document.querySelectorAll("#form .multi-only").forEach(el=>el.hidden=!!editing);
   document.querySelectorAll("#form .sent-only").forEach(el=>el.hidden=!(editing && (formStatus!=="check" || editing.send_date)));
-  const hasRes = editing && (+editing.wc || +editing.nir || editing.retest_result);
+  const hasRes = editing && (editing.wc_result || editing.nir_result || editing.retest_result);
   const showTest = formStatus==="result" || formStatus==="closed" || !!hasRes;
   document.querySelectorAll("#form .phase-test").forEach(el=>el.hidden=!showTest);
+  $("#reBox").hidden = !editing;
+  $("#reBox").classList.toggle("novals", !showTest);
+  $("#reLegend").textContent = showTest ? "ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า" : "Re-test ด้วยวิธี (กรอกค่าผลเมื่อได้ผลแล้ว)";
   $("#waitBox").hidden = showTest;
   $("#closeBox").hidden = !(formStatus==="result" || formStatus==="closed" || (editing && editing.root_cause_cat));
   $("#statusPick").hidden = !editing;
@@ -1046,7 +1073,8 @@ function addItemRow(g, name=""){
   const d=document.createElement("div"); d.className="irow";
   d.innerHTML=`<div class="ihead"><input class="iname" list="itemList" placeholder="Test item เช่น CP" value="${esc(name)}"><span class="iround"></span><button type="button" class="del irm" title="เอา Test item นี้ออก" aria-label="เอาออก">${TRASH}</button></div>
     <div class="mrow"><label class="ck"><input type="checkbox" class="iwc"> WC</label><input class="val iwcv" inputmode="decimal" placeholder="ค่า Original WC" disabled></div>
-    <div class="mrow"><label class="ck"><input type="checkbox" class="inir"> NIR</label><input class="val inirv" inputmode="decimal" placeholder="ค่า Original NIR" disabled></div>`;
+    <div class="mrow"><label class="ck"><input type="checkbox" class="inir"> NIR</label><input class="val inirv" inputmode="decimal" placeholder="ค่า Original NIR" disabled></div>
+    <div class="rechips">Re-test ด้วย <label class="rechip wc"><input type="checkbox" class="rwc"> RE WC</label><label class="rechip nir"><input type="checkbox" class="rnir"> RE NIR</label></div>`;
   g.querySelector(".sitems").appendChild(d); updItemRounds(); return d;
 }
 function updItemRounds(){
@@ -1081,7 +1109,8 @@ async function saveNew(){
   const groups=seqGroups().map(g=>({ g, seq:String(g.querySelector(".sseq").value).trim(), name:g.querySelector(".sname").value.trim(), recv:g.querySelector(".srecv").value,
     items:[...g.querySelectorAll(".irow")].map(r=>({ name:r.querySelector(".iname").value.trim(),
       wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(),
-      nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim() })).filter(x=>x.name) }));
+      nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim(),
+      rwc:r.querySelector(".rwc").checked, rnir:r.querySelector(".rnir").checked })).filter(x=>x.name) }));
   if(groups.some(x=>!x.seq)){ toast("กรุณาใส่เลข Seq ให้ครบทุกตัวอย่าง"); return; }
   const dupSeq=groups.map(x=>x.seq).find((k,i,a)=>a.indexOf(k)!==i); if(dupSeq){ toast(`Seq ${dupSeq} ซ้ำกัน`); return; }
   const empty=groups.find(x=>!x.items.length); if(empty){ toast(`Seq ${empty.seq}: กรอก Test item อย่างน้อย 1 รายการ`); empty.g.querySelector(".iname")?.focus(); return; }
@@ -1094,7 +1123,7 @@ async function saveNew(){
   let ok=0, saved=null;
   try{
     for(const gr of groups) for(const it of gr.items){
-      saved = await api("/retests",{method:"POST",body:JSON.stringify({...base, seq:gr.seq, sample_name:gr.name, sample_date:gr.recv, test_item:it.name, orig_wc:it.wc?1:0, orig_wc_result:it.wcv, orig_nir:it.nir?1:0, orig_nir_result:it.nirv})});
+      saved = await api("/retests",{method:"POST",body:JSON.stringify({...base, seq:gr.seq, sample_name:gr.name, sample_date:gr.recv, test_item:it.name, orig_wc:it.wc?1:0, orig_wc_result:it.wcv, orig_nir:it.nir?1:0, orig_nir_result:it.nirv, wc:it.rwc?1:0, nir:it.rnir?1:0})});
       ok++;
     }
     closeDrawer();
