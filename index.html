@@ -1217,6 +1217,8 @@ const todayISO = () => { const t=new Date(); return `${t.getFullYear()}-${String
 let sheetRows=[];
 function offerSheet(rows){ sheetRows=rows; $("#sheetN").textContent=`${rows.length} รายการ`; $("#dlgSheet").showModal(); }
 $("#sheetGo").onclick=()=>{ $("#dlgSheet").close(); printSheet(sheetRows); };
+// ใบส่งตัวอย่าง: Re-test ด้วย NIR แสดงเป็น "CP-NIR" (ติ๊กทั้ง WC และ NIR = "CP / CP-NIR")
+const sheetItem = r => { const t=r.test_item||""; if(!+r.nir) return t; return +r.wc ? `${t} / ${t}-NIR` : `${t}-NIR`; };
 function printSheet(rows, sendDate){
   rows=rows.slice().sort((a,b)=>labKey(a.lab_no).localeCompare(labKey(b.lab_no))||(a.eff_date||"").localeCompare(b.eff_date||"")||((parseInt(a.seq)||0)-(parseInt(b.seq)||0))||String(a.test_item).localeCompare(String(b.test_item)));
   let no=0;
@@ -1228,7 +1230,7 @@ function printSheet(rows, sendDate){
     <div class="meta">Send Sample Date: <b>${fmtDate(d)}</b> · ${labs} Lab No. · ${rows.length} Test item${$("#me").value?` · ผู้เช็คตัวอย่าง: ${esc($("#me").value)}`:""}</div>
     <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th style="width:40px">Seq</th><th>Sample name</th><th>Receive</th><th>Test item</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
     <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); if(g) no++;
-      return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(r.test_item)}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
+      return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(sheetItem(r))}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
     <div class="signs">
       <div><b>ส่งตัวอย่าง</b>ผู้ส่งตัวอย่าง<span></span>วันที่ ........../........../..........</div>
       <div><b>&nbsp;</b>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
