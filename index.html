@@ -447,7 +447,7 @@ dialog .db{max-height:70vh}
       <label class="f single-only">Receive date<input type="date" name="sample_date"></label>
       <label class="f single-only"><span class="req">Lab No.</span><input name="lab_no"></label>
       <label class="f single-only">Seq<input name="seq" inputmode="numeric"></label>
-      <label class="f single-only">Sample name<input name="sample_name"></label>
+      <label class="f single-only"><span class="req">Sample name</span><input name="sample_name"></label>
       <label class="f single-only"><span class="req">Test item</span><input name="test_item" list="itemList"></label>
       <div class="full multi-only" id="itemsBox">
         <div id="seqGroups"></div>
@@ -1009,6 +1009,7 @@ async function save(){
   const f=$("#form");
   if(!editing) return saveNew();
   if(!f.lab_no.value.trim()||!f.test_item.value.trim()){ toast("กรุณากรอก Lab No. และ Test item"); return; }
+  if(!f.sample_name.value.trim()){ toast("กรุณากรอก Sample name"); f.sample_name.focus(); return; }
   const data={}; for(const el of f.elements) if(el.name) data[el.name] = el.type==="checkbox" ? (el.checked?1:0) : el.value;
   data.status = formStatus;
   const done = formStatus==="result"||formStatus==="closed";
@@ -1062,7 +1063,7 @@ function addSeqGroup(){
     <div class="sg2">
       <label><span class="req">Lab No.</span><input class="slab" value="${esc(lab)}" ${first?'placeholder="เช่น 9988"':'readonly title="ใช้ Lab No. เดียวกับตัวอย่างแรก"'}></label>
       <label>Seq<input class="sseq" inputmode="numeric" value="${next}"></label>
-      <div class="sleft"><label>Sample name<input class="sname" placeholder="เช่น YC"></label>
+      <div class="sleft"><label><span class="req">Sample name</span><input class="sname" placeholder="เช่น YC"></label>
         <label>Receive date<input class="srecv" type="date" value="${esc(prevRecv)}"></label></div>
       <div class="sval"><span class="vl"><span class="req">ค่าวิเคราะห์ (Test item + Original)</span></span><div class="sitems"></div>
         <button type="button" class="addItem sadd">+ เพิ่ม Test item</button></div>
@@ -1112,6 +1113,7 @@ async function saveNew(){
       nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim(),
       rwc:r.querySelector(".rwc").checked, rnir:r.querySelector(".rnir").checked })).filter(x=>x.name) }));
   if(groups.some(x=>!x.seq)){ toast("กรุณาใส่เลข Seq ให้ครบทุกตัวอย่าง"); return; }
+  const noName=groups.find(x=>!x.name); if(noName){ toast(`Seq ${noName.seq}: กรุณากรอก Sample name`); noName.g.querySelector(".sname").focus(); return; }
   const dupSeq=groups.map(x=>x.seq).find((k,i,a)=>a.indexOf(k)!==i); if(dupSeq){ toast(`Seq ${dupSeq} ซ้ำกัน`); return; }
   const empty=groups.find(x=>!x.items.length); if(empty){ toast(`Seq ${empty.seq}: กรอก Test item อย่างน้อย 1 รายการ`); empty.g.querySelector(".iname")?.focus(); return; }
   for(const gr of groups){
