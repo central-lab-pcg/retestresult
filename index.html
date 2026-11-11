@@ -325,11 +325,28 @@ dialog .db{max-height:70vh}
   #printArea td[rowspan]{vertical-align:middle}
   #printArea tr.gs td{border-top:1.6px solid #000}
   #printArea .cb{display:inline-block;width:12px;height:12px;border:1.2px solid #000;border-radius:2px}
+  #printArea .sheet-doc h1{font-size:14pt}
+  #printArea .sheet-doc .meta{margin:1px 0 6px}
+  #printArea .sheet-doc table{font-size:9pt}
+  #printArea .sheet-doc th,#printArea .sheet-doc td{padding:2.5px 5px}
+  #printArea .sheet-doc.dense table{font-size:8pt}
+  #printArea .sheet-doc.dense th,#printArea .sheet-doc.dense td{padding:1px 4px;line-height:1.3}
+  #printArea .sheet-doc.dense2 table{font-size:7.5pt}
+  #printArea .sheet-doc.dense2 th,#printArea .sheet-doc.dense2 td{padding:0 4px;line-height:1.25}
+  #printArea .sheet-doc.dense .cb,#printArea .sheet-doc.dense2 .cb{width:10px;height:10px}
+  #printArea .sheet-doc.dense .signs4 span,#printArea .sheet-doc.dense2 .signs4 span{height:18px}
+  #printArea .signs4{display:grid;grid-template-columns:repeat(4,1fr);column-gap:14px;row-gap:2px;margin-top:12px;font-size:8.5pt;break-inside:avoid}
+  #printArea .signs4 .grp{grid-column:span 2;font-weight:700;font-size:9.5pt;border-bottom:1px solid #000;padding-bottom:1px;margin-bottom:4px}
+  #printArea .signs4>div:not(.grp){display:flex;flex-direction:column;gap:3px}
+  #printArea .signs4 span{display:block;border-bottom:1px dotted #000;height:22px}
   #printArea .signs{display:flex;gap:40px;margin-top:22px;break-inside:avoid}
   #printArea .signs b{font-size:10.5pt}
   #printArea .signs div{flex:1;display:flex;flex-direction:column;gap:6px;font-size:10pt}
   #printArea .signs span{display:block;border-bottom:1px dotted #000;height:28px}
 }
+.undobar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:35;display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--bg);padding:10px 10px 10px 18px;border-radius:12px;font-size:14.5px;box-shadow:0 12px 30px -10px rgba(0,0,0,.4);max-width:calc(100vw - 32px)}
+.undobar .btn{background:var(--bg);color:var(--ink);border-color:var(--bg);font-weight:700}
+.undox{border:0;background:none;color:var(--bg);font-size:20px;cursor:pointer;padding:0 6px;opacity:.7}
 .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:40}
 .toast.show{opacity:1}
 
@@ -372,6 +389,7 @@ dialog .db{max-height:70vh}
         <button data-exp="pdf-month">PDF — เดือนนี้<small>เปิดหน้าพิมพ์ แล้วเลือก “บันทึกเป็น PDF”</small></button>
       </div>
     </div>
+    <button class="btn" id="btnUndo" hidden>↶ เลิกลบล่าสุด</button>
     <button class="btn" id="btnSettings">ตั้งค่า</button>
     <button class="btn primary" id="btnNew">เพิ่มรายการ</button>
   </header>
@@ -560,7 +578,7 @@ dialog .db{max-height:70vh}
 <dialog id="dlgDelete">
   <div class="dh"><h2 id="delTitle">ลบรายการ?</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
   <div class="db">
-    <p style="margin:0">รายการต่อไปนี้จะถูกลบพร้อมประวัติการติดตาม <b>ลบแล้วกู้คืนไม่ได้</b></p>
+    <p style="margin:0">รายการต่อไปนี้จะถูกลบพร้อมประวัติการติดตาม กด <b>เลิกทำ</b> ได้ทันทีหลังลบ</p>
     <ul class="dellist" id="delList"></ul>
   </div>
   <div class="df"><button class="btn bad" id="delGo">ลบรายการ</button><button class="btn" data-close>ยกเลิก</button></div>
@@ -571,6 +589,7 @@ dialog .db{max-height:70vh}
   <div class="db"><p style="margin:0">เช็คตัวอย่างแล้ว <b id="sheetN"></b> · พิมพ์ใบส่งตัวอย่างเพื่อแนบไปกับตัวอย่างที่ส่งเข้าห้องปฏิบัติการ (เลือกเครื่องพิมพ์ หรือ “บันทึกเป็น PDF”)</p></div>
   <div class="df"><button class="btn primary" id="sheetGo">พิมพ์ใบส่งตัวอย่าง</button><button class="btn" data-close>ไม่ต้อง</button></div>
 </dialog>
+<div class="undobar" id="undoBar" hidden role="status"><span id="undoTxt"></span><button class="btn sm" id="undoGo">↶ เลิกทำ</button><button class="undox" id="undoX" aria-label="ปิด">×</button></div>
 <div id="printArea"></div>
 <div class="toast" id="toast" role="status"></div>
 <div class="tip" id="tip"></div>
@@ -1000,7 +1019,7 @@ async function loadHist(id){
     const when = s => { const d=new Date(s.replace(" ","T")+"Z"); return isNaN(d)?s:d.toLocaleString("th-TH-u-ca-gregory",{dateStyle:"medium",timeStyle:"short"}); };
     const name = k => STATUS[SI[k]]?.t || k;
     $("#hist").innerHTML = h.map(x=>{
-      const txt = x.action==="create" ? `สร้างรายการ (${name(x.to_status)})` : x.action==="status" ? `${name(x.from_status)} → <b>${name(x.to_status)}</b>` : "แก้ไขข้อมูล";
+      const txt = x.action==="create" ? `สร้างรายการ (${name(x.to_status)})` : x.action==="status" ? `${name(x.from_status)} → <b>${name(x.to_status)}</b>` : x.action==="restore" ? "กู้คืนรายการที่ลบ" : x.action==="delete" ? "ลบรายการ" : "แก้ไขข้อมูล";
       return `<li style="--c:${x.to_status?`var(--s-${x.to_status})`:"var(--line)"}">${txt}${x.note?`<div>${esc(fieldNames(x.note))}</div>`:""}<div class="w">${when(x.at)}${x.by_user?" · "+esc(x.by_user):""}</div></li>`;
     }).join("") || '<li class="muted">ไม่มีประวัติ</li>';
   }catch(e){ $("#hist").innerHTML=`<li>${esc(e.message)}</li>`; }
@@ -1191,6 +1210,7 @@ function exportExcel(wholeYear){
   toast("ส่งออก Excel แล้ว");
 }
 function exportPDF(){
+  setPage("A4 landscape", "10mm");
   const rows=exportRows(filtered()).slice().sort(pdfSort);
   if(!rows.length){ toast("ไม่มีข้อมูลให้ส่งออก"); return; }
   const cnt=k=>rows.filter(r=>r.status===k).length;
@@ -1210,6 +1230,7 @@ const pdfSeq = r => `${pdfGroup(r)}|${r.seq??""}|${r.sample_name||""}|${r.sample
 function spanOf(rows,key,i){ if(i>0 && key(rows[i-1])===key(rows[i])) return 0; let n=1; while(i+n<rows.length && key(rows[i+n])===key(rows[i])) n++; return n; }
 const RS = n => n>1 ? ` rowspan="${n}"` : "";
 const pdfSort = (a,b)=>(a.eff_date||"").localeCompare(b.eff_date||"")||labKey(a.lab_no).localeCompare(labKey(b.lab_no))||String(a.requester||"").localeCompare(String(b.requester||""))||((parseInt(a.seq)||0)-(parseInt(b.seq)||0))||a.id-b.id;
+function setPage(size, margin){ let st=document.getElementById("pageStyle"); if(!st){ st=document.createElement("style"); st.id="pageStyle"; document.head.appendChild(st); } st.textContent=`@media print{@page{size:${size};margin:${margin}}}`; }
 let printing=false;
 function doPrint(){ if(printing) return; printing=true; setTimeout(()=>{ window.print(); setTimeout(()=>printing=false,800); },150); }
 /* ---------- ใบส่งตัวอย่าง */
@@ -1225,19 +1246,19 @@ function printSheet(rows, sendDate){
   const d = sendDate || rows.map(r=>r.send_date).filter(Boolean).sort().pop() || todayISO();
   const labs=new Set(rows.map(r=>labKey(r.lab_no))).size;
   const box='<span class="cb"></span>';
-  $("#printArea").innerHTML=`<div class="sheet-doc">
+  setPage("A4 portrait", "8mm");
+  $("#printArea").innerHTML=`<div class="sheet-doc${rows.length>48?" dense2":rows.length>26?" dense":""}">
     <h1>ใบส่งตัวอย่างเข้าห้องปฏิบัติการ (Re-test)</h1>
     <div class="meta">Send Sample Date: <b>${fmtDate(d)}</b> · ${labs} Lab No. · ${rows.length} Test item${$("#me").value?` · ผู้เช็คตัวอย่าง: ${esc($("#me").value)}`:""}</div>
     <table><thead><tr><th style="width:34px">ลำดับ</th><th>Lab No.</th><th style="width:40px">Seq</th><th>Sample name</th><th>Receive</th><th>Test item</th><th style="width:64px">รับแล้ว</th><th style="width:64px">ส่งคืน</th></tr></thead>
     <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); if(g) no++;
       return `<tr class="${g?"gs":""}">${g?`<td class="c"${RS(g)}>${no}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td>`:""}<td>${esc(sheetItem(r))}</td>${q?`<td class="c"${RS(q)}>${box}</td><td class="c"${RS(q)}>${box}</td>`:""}</tr>`; }).join("")}</tbody></table>
-    <div class="signs">
-      <div><b>ส่งตัวอย่าง</b>ผู้ส่งตัวอย่าง<span></span>วันที่ ........../........../..........</div>
-      <div><b>&nbsp;</b>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
-    </div>
-    <div class="signs">
-      <div><b>ส่งคืนตัวอย่าง</b>ผู้ส่งคืนตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ........../........../..........</div>
-      <div><b>&nbsp;</b>ผู้รับตัวอย่างคืนแล้ว<span></span>วันที่ ........../........../..........</div>
+    <div class="signs4">
+      <div class="grp">ส่งตัวอย่าง</div><div class="grp">ส่งคืนตัวอย่าง</div>
+      <div>ผู้ส่งตัวอย่าง<span></span>วันที่ ......./......./.......</div>
+      <div>ผู้รับตัวอย่าง (ห้องปฏิบัติการ)<span></span>วันที่ ......./......./.......</div>
+      <div>ผู้ส่งคืน (ห้องปฏิบัติการ)<span></span>วันที่ ......./......./.......</div>
+      <div>ผู้รับตัวอย่างคืนแล้ว<span></span>วันที่ ......./......./.......</div>
     </div>
   </div>`;
   doPrint();
@@ -1311,12 +1332,41 @@ function askDelete(ids){
 $("#delGo").onclick=async()=>{
   const b=$("#delGo"); b.disabled=true; b.textContent="กำลังลบ…";
   let ok=0, fail=0;
-  for(const id of toDelete){ try{ await api(`/retests/${id}`,{method:"DELETE"}); ok++; picked.delete(id); }catch{ fail++; } }
+  const done=[];
+  for(const id of toDelete){ try{ await api(`/retests/${id}`,{method:"DELETE"}); ok++; done.push(id); picked.delete(id); }catch{ fail++; } }
   $("#dlgDelete").close();
   if(editing && toDelete.includes(editing.id)) closeDrawer();
-  toast(fail ? `ลบแล้ว ${ok} รายการ · ไม่สำเร็จ ${fail} รายการ` : `ลบแล้ว ${ok} รายการ`);
+  if(done.length){
+    const labs=[...new Set(done.map(id=>yearRows.find(r=>r.id===id)?.lab_no).filter(Boolean))];
+    setUndo({ids:done, label:`ลบ ${done.length} รายการ${labs.length?` (Lab No. ${labs.slice(0,3).join(", ")}${labs.length>3?"…":""})`:""}`});
+  }
+  if(fail) toast(`ลบแล้ว ${ok} รายการ · ไม่สำเร็จ ${fail} รายการ`);
   loadYear();
 };
+/* ---------- เลิกทำการลบ (Undo) */
+let undoInfo=null, undoTimer=null;
+try{ undoInfo=JSON.parse(localStorage.getItem("rt_undo")||"null"); }catch{}
+function setUndo(info){
+  undoInfo=info; try{ localStorage.setItem("rt_undo", JSON.stringify(info)); }catch{}
+  $("#undoTxt").textContent=`${info.label} แล้ว`; $("#undoBar").hidden=false;
+  clearTimeout(undoTimer); undoTimer=setTimeout(()=>{ $("#undoBar").hidden=true; }, 20000);
+  updUndoBtn();
+}
+function clearUndo(){ undoInfo=null; try{ localStorage.removeItem("rt_undo"); }catch{} $("#undoBar").hidden=true; updUndoBtn(); }
+function updUndoBtn(){ $("#btnUndo").hidden=!undoInfo; if(undoInfo) $("#btnUndo").title=`เลิกทำ: ${undoInfo.label}`; }
+async function doUndo(){
+  if(!undoInfo) return;
+  try{
+    const r=await api("/retests/restore",{method:"POST",body:JSON.stringify({ids:undoInfo.ids})});
+    clearUndo(); toast(`กู้คืนแล้ว ${r.restored} รายการ`); loadYear();
+  }catch(e){ toast(e.message); }
+}
+$("#undoGo").onclick=doUndo; $("#btnUndo").onclick=doUndo;
+$("#undoX").onclick=()=>{ $("#undoBar").hidden=true; };
+document.addEventListener("keydown",e=>{
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z" && undoInfo && !e.target.closest("input,textarea,select")){ e.preventDefault(); doUndo(); }
+});
+updUndoBtn();
 document.addEventListener("keydown",e=>{ if(e.key==="Escape" && $("#drawer").classList.contains("open")) closeDrawer(); });
 document.querySelectorAll("dialog [data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
 
