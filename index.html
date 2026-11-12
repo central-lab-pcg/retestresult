@@ -933,7 +933,7 @@ function renderPhases(){
   $("#waitBox").hidden = showTest;
   $("#closeBox").hidden = !(formStatus==="result" || formStatus==="closed" || (editing && editing.root_cause_cat));
   $("#statusPick").hidden = !editing;
-  $("#dSaveClose").hidden = true;   // ไม่ต้องใช้แล้ว: กรอก Root cause แล้วกด “บันทึก” = ปิดงาน
+  $("#dSaveClose").hidden = !(formStatus==="result" || (formStatus==="closed" && editing && editing.status!=="closed"));
   const w=$("#waitBox");
   if(!editing || formStatus==="check") w.firstChild.textContent = `บันทึกคำขอแล้ว สถานะจะเป็น “เช็คตัวอย่าง” ให้ผู้ส่งตัวอย่าง${$("#form").requester.value?` (${$("#form").requester.value})`:""} ตรวจสอบตัวอย่าง แล้วกด `;
   else w.firstChild.textContent = "ตัวอย่างอยู่ในห้องปฏิบัติการ เมื่อได้ผลแล้ว กด ";
@@ -945,7 +945,7 @@ function renderStatusPick(){
   $("#noteWrap").hidden = !(editing && editing.status!==formStatus);
   const need = formStatus==="closed";
   $("#closeBox").classList.toggle("need", need);
-  $("#closeBox legend").textContent = "Root cause — กรอกแล้วกด “บันทึก” ระบบจะปิดงานให้อัตโนมัติ";
+  $("#closeBox legend").textContent = need ? "Root cause — ต้องระบุก่อนปิดงาน" : "Root cause (ระบุเมื่อปิดงาน)";
   $("#rcLbl").className = need ? "req" : "";
 }
 function syncMethods(){
@@ -1030,14 +1030,6 @@ async function save(){
   if(!f.lab_no.value.trim()||!f.test_item.value.trim()){ toast("กรุณากรอก Lab No. และ Test item"); return; }
   if(!f.sample_name.value.trim()){ toast("กรุณากรอก Sample name"); f.sample_name.focus(); return; }
   const data={}; for(const el of f.elements) if(el.name) data[el.name] = el.type==="checkbox" ? (el.checked?1:0) : el.value;
-  // กฎ: กรอก Root cause (+ ผลเปรียบเทียบ + ผล Re-test ครบ) → ปิดงานอัตโนมัติ / ไม่มี Root cause → "ได้ผลแล้ว"
-  const valsOk = (!data.wc || !!data.wc_result) && (!data.nir || !!data.nir_result) && !!(data.wc_result||data.nir_result||data.retest_result);
-  let hint="";
-  if(editing && data.root_cause_cat && ["lab","result","closed"].includes(formStatus)){
-    if(data.comparison==="Pending"){ formStatus = formStatus==="closed" ? "result" : formStatus; hint="ยังไม่ปิดงาน: ติ๊กผลเปรียบเทียบก่อน"; }
-    else if(!valsOk){ formStatus = formStatus==="closed" ? "result" : formStatus; hint="ยังไม่ปิดงาน: กรอกผล Re-test ให้ครบก่อน"; }
-    else formStatus="closed";
-  } else if(editing && !data.root_cause_cat && formStatus==="closed"){ formStatus="result"; hint="ยังไม่มี Root cause · สถานะ “ได้ผลแล้ว”"; }
   data.status = formStatus;
   const done = formStatus==="result"||formStatus==="closed";
   if((data.orig_wc && !data.orig_wc_result) || (data.orig_nir && !data.orig_nir_result)){ toast("Original ติ๊ก WC/NIR แล้ว ต้องระบุค่าด้วย"); return; }
@@ -1048,7 +1040,7 @@ async function save(){
   try{
     const saved = editing ? await api(`/retests/${editing.id}`,{method:"PUT",body:JSON.stringify(data)})
                           : await api("/retests",{method:"POST",body:JSON.stringify(data)});
-    toast(!editing ? "เพิ่มรายการแล้ว" : saved.status==="closed" && editing.status!=="closed" ? "บันทึกแล้ว · ปิดงาน (มี Root cause แล้ว)" : `บันทึกการแก้ไขแล้ว${hint?` · ${hint}`:""}`); closeDrawer();
+    toast(editing?"บันทึกการแก้ไขแล้ว":"เพิ่มรายการแล้ว"); closeDrawer();
     const sy=+(saved.eff_date||"").slice(0,4), sm=+(saved.eff_date||"").slice(5,7);
     if(sy && sm && (sy!==year || sm!==month)){ year=sy; month=sm; toast(`บันทึกแล้ว · ไปที่ชีต ${MONTHS_FULL[sm-1]} ${sy}`); }
     loadYear();
