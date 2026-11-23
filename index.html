@@ -921,13 +921,16 @@ document.querySelectorAll(".seg button").forEach(b=>b.onclick=()=>{
 /* ---------- drawer */
 function renderPhases(){
   const f=$("#form");
-  document.querySelectorAll("#form .single-only").forEach(el=>el.hidden=!editing);
-  document.querySelectorAll("#form .multi-only").forEach(el=>el.hidden=!!editing);
+  // หน้าแก้ไขใช้กรอบเดียวกับหน้าเพิ่มรายการ: ช่องเดิมซ่อนไว้เป็นตัวเก็บค่า
+  document.querySelectorAll("#form .single-only").forEach(el=>el.hidden=true);
+  $("#form fieldset.methods.single-only").hidden = !(editing && editing.original_result);
+  document.querySelectorAll("#form .multi-only").forEach(el=>el.hidden=false);
+  $("#addSeq").hidden = !!editing;
   document.querySelectorAll("#form .sent-only").forEach(el=>el.hidden=!(editing && (formStatus!=="check" || editing.send_date)));
   const hasRes = editing && (editing.wc_result || editing.nir_result || editing.retest_result);
   const showTest = formStatus==="result" || formStatus==="closed" || !!hasRes;
   document.querySelectorAll("#form .phase-test").forEach(el=>el.hidden=!showTest);
-  $("#reBox").hidden = !editing;
+  $("#reBox").hidden = !editing || !showTest;
   $("#reBox").classList.toggle("novals", !showTest);
   $("#reLegend").textContent = showTest ? "ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า" : "Re-test ด้วยวิธี (กรอกค่าผลเมื่อได้ผลแล้ว)";
   $("#waitBox").hidden = showTest;
@@ -998,7 +1001,8 @@ async function openDrawer(rec, presetStatus){
   const t=new Date(), iso=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,"0")}-${String(t.getDate()).padStart(2,"0")}`;
   const v = rec || {retest_date:iso, requester:$("#me").value, comparison:"Pending"};
   for(const el of f.elements){ if(!el.name || el.name==="note") continue; if(el.type==="checkbox") el.checked=!!+v[el.name]; else el.value=v[el.name] ?? ""; }
-  if(!rec){ $("#seqGroups").innerHTML=""; addSeqGroup(); }
+  $("#seqGroups").innerHTML=""; const g0=addSeqGroup();
+  if(rec) fillEditGroup(g0, rec);
   setCmp(v.comparison||"Pending");
   $("#legacyRow").hidden = !(rec && rec.retest_result);
   $("#legacyOrig").hidden = !(rec && rec.original_result);
@@ -1071,6 +1075,31 @@ function setCmp(v){ $("#form").comparison.value=v; document.querySelectorAll("[d
 document.querySelectorAll("[data-cmp]").forEach(c=>c.addEventListener("change",()=>setCmp(c.checked?c.dataset.cmp:"Pending")));
 /* ---------- เพิ่มหลาย Test item ใน Lab No. เดียว */
 const labKey = v => String(v||"").trim().toUpperCase();
+function fillEditGroup(g, r){
+  const q=sel=>g.querySelector(sel), it=g.querySelector(".irow");
+  q(".slab").value=r.lab_no||""; q(".sseq").value=r.seq??""; q(".sname").value=r.sample_name||""; q(".srecv").value=r.sample_date||"";
+  it.querySelector(".iname").value=r.test_item||"";
+  for(const [c,f] of [["wc","orig_wc"],["nir","orig_nir"]]){
+    const cb=it.querySelector(".i"+c), v=it.querySelector(".i"+c+"v"); cb.checked=!!+r[f]; v.disabled=!cb.checked; v.value=+r[f]?(r[f+"_result"]||""):""; }
+  it.querySelector(".rwc").checked=!!+r.wc; it.querySelector(".rnir").checked=!!+r.nir;
+  g.querySelectorAll(".sadd,.srm,.irm").forEach(x=>x.hidden=true);
+  updItemRounds();
+}
+// แก้ไข: คัดลอกค่าจากกรอบสีเขียวไปช่องเก็บค่าในฟอร์ม
+function syncEditGroup(){
+  if(!editing) return;
+  const f=$("#form"), g=seqGroups()[0]; if(!g) return; const it=g.querySelector(".irow");
+  f.lab_no.value=g.querySelector(".slab").value; f.seq.value=g.querySelector(".sseq").value;
+  f.sample_name.value=g.querySelector(".sname").value; f.sample_date.value=g.querySelector(".srecv").value;
+  f.test_item.value=it.querySelector(".iname").value;
+  f.orig_wc.checked=it.querySelector(".iwc").checked; f.orig_wc_result.value=it.querySelector(".iwcv").value;
+  f.orig_nir.checked=it.querySelector(".inir").checked; f.orig_nir_result.value=it.querySelector(".inirv").value;
+  const wcB=f.wc.checked, nirB=f.nir.checked;
+  f.wc.checked=it.querySelector(".rwc").checked; f.nir.checked=it.querySelector(".rnir").checked;
+  if(wcB!==f.wc.checked || nirB!==f.nir.checked) syncMethods();
+}
+$("#seqGroups").addEventListener("input", ()=>setTimeout(syncEditGroup));
+$("#seqGroups").addEventListener("change", ()=>setTimeout(syncEditGroup));
 function seqGroups(){ return [...document.querySelectorAll("#seqGroups .sgrp")]; }
 function addSeqGroup(){
   const used=seqGroups().map(g=>parseInt(g.querySelector(".sseq").value)||0);
@@ -1105,6 +1134,7 @@ function updItemRounds(){
     const rows=[...g.querySelectorAll(".irow")];
     rows.forEach(r=>{ r.querySelector(".irm").hidden = rows.length<2;
       const it=labKey(r.querySelector(".iname").value), el=r.querySelector(".iround");
+      if(editing){ el.textContent=`Re-ครั้งที่ ${editing.lab_round||1}`; return; }
       if(!it || !labInfo){ el.textContent=""; return; }
       const n=labInfo.items.filter(x=>labKey(x.test_item)===it && String(x.seq??"").trim()===seq).length+1;
       el.textContent=`Re-ครั้งที่ ${n}`; });
@@ -1291,7 +1321,9 @@ $("#form").addEventListener("input",e=>{
   if(n==="lab_no"){ clearTimeout(labT); labT=setTimeout(lookupLab,300); }
   if(["original_result","orig_wc_result","orig_nir_result","wc_result","nir_result","retest_result"].includes(n)) updCompare();
 });
-$("#form").addEventListener("change",e=>{ if(["wc","nir","orig_wc","orig_nir"].includes(e.target.name)){ syncMethods(); if(e.target.checked) $("#form")[e.target.name+"_result"].focus(); } });
+$("#form").addEventListener("change",e=>{
+  if(editing && (e.target.name==="wc"||e.target.name==="nir")){ const it=$("#seqGroups .irow"); if(it) it.querySelector(e.target.name==="wc"?".rwc":".rnir").checked=e.target.checked; }
+  if(["wc","nir","orig_wc","orig_nir"].includes(e.target.name)){ syncMethods(); if(e.target.checked) $("#form")[e.target.name+"_result"].focus(); } });
 $("#statusPick").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; formStatus=b.dataset.k; renderStatusPick(); });
 $("#dDelete").onclick=()=>askDelete([editing.id]);
 /* ---------- ลบรายการ (ทีละรายการ / หลายรายการ) */
