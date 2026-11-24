@@ -862,8 +862,9 @@ function renderList(){
     if(r.status==="check"){ if(checkBtnShown.has(gk(r))) showAdv=false; else checkBtnShown.add(gk(r)); }
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
-    const reHead = r.re_kind==="switch" ? `<div>${swTag(r.re_from, methodsOf(r))}</div>`
-                 : r.re_kind==="again" ? `<div><span class="againtag" title="Re-test ซ้ำด้วยวิธีเดิม">Re-อีกครั้ง</span></div>` : "";
+    const ri = reInfo(r);
+    const reHead = ri.kind==="switch" ? `<div>${swTag(ri.from, methodsOf(r))}</div>`
+                 : ri.kind==="again" ? `<div><span class="againtag" title="Re-test ซ้ำด้วยวิธีเดิม">Re-อีกครั้ง</span></div>` : "";
     const resHtml = reHead + (res.length ? res.map(x=>{
       return `<div class="mres">${x.m?`<span class="retag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
@@ -871,7 +872,7 @@ function renderList(){
     const rs = n => n>1 ? ` rowspan="${n}"` : "";
     const allPicked = gIds.every(id=>picked.has(id));
     const reCls = (+r.wc && +r.nir ? " re re-both" : +r.wc ? " re re-wc" : +r.nir ? " re re-nir" : "")
-      + (r.re_kind==="switch" && r.re_from ? ` re-switch from-${r.re_from.includes("NIR")&&!r.re_from.includes("WC")?"nir":"wc"}` : "");
+      + (ri.kind==="switch" && ri.from ? ` re-switch from-${ri.from.includes("NIR")&&!ri.from.includes("WC")?"nir":"wc"}` : "");
     return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}${reCls}">
       ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>
       <td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
@@ -1274,7 +1275,7 @@ function recordObj(r){
     "WC Re-ครั้งที่": +r.wc ? (r.wc_round||"") : "", "Re-test WC": +r.wc ? (r.wc_result||"") : "",
     "NIR Re-ครั้งที่": +r.nir ? (r.nir_round||"") : "", "Re-test NIR": +r.nir ? (r.nir_result||"") : "",
     "ผลการเปรียบเทียบ": r.comparison ? cmpText(r.comparison) : "", "Root Cause": r.root_cause_cat||"", "Root Cause Detail": r.root_cause||"",
-    "ผล Re รอบก่อน": prevText(r), "Re แบบ": r.re_kind==="switch" ? `เปลี่ยนวิธี ${r.re_from||""} → ${methodsOf(r)}` : r.re_kind==="again" ? "Re-อีกครั้ง" : "", "Status": STATUS[SI[r.status]]?.t||r.status, "เช็คโดย": r.checked_by||"",
+    "ผล Re รอบก่อน": prevText(r), "Re แบบ": (()=>{ const ri=reInfo(r); return ri.kind==="switch" ? `เปลี่ยนวิธี ${ri.from||""} → ${methodsOf(r)}` : ri.kind==="again" ? "Re-อีกครั้ง" : ""; })(), "Status": STATUS[SI[r.status]]?.t||r.status, "เช็คโดย": r.checked_by||"",
   };
 }
 function sheetFrom(rows){
@@ -1449,11 +1450,21 @@ $("#delGo").onclick=async()=>{
 };
 /* ---------- Re-test อีกรอบ */
 // ผลของรอบก่อน ๆ (ไล่ตามลิงก์ prev_id) เพื่อแสดงคู่กับรายการ Re ปัจจุบัน
+// รอบก่อน = Lab No. + Seq + Test item เดียวกันที่ Re-ครั้งที่ น้อยกว่า (ไม่ต้องพึ่งลิงก์ prev_id)
+function prevRounds(r){
+  if(!(r.lab_round>1)) return [];
+  return yearRows.filter(x=>x.id!==r.id && labKey(x.lab_no)===labKey(r.lab_no) && String(x.seq??"").trim()===String(r.seq??"").trim()
+      && labKey(x.test_item)===labKey(r.test_item) && (x.lab_round||0)<r.lab_round).sort((a,b)=>b.lab_round-a.lab_round);
+}
 function prevChain(r){
-  const out=[]; let pid=r.prev_id, guard=0;
-  while(pid && guard++<10){ const p=yearRows.find(x=>x.id===+pid); if(!p) break;
-    const res=results(p).filter(x=>x.v); if(res.length) out.push({round:p.lab_round, res, date:p.retest_date}); pid=p.prev_id; }
-  return out;
+  return prevRounds(r).map(p=>({round:p.lab_round, res:results(p).filter(x=>x.v), date:p.retest_date})).filter(c=>c.res.length);
+}
+// Re-อีกครั้ง / เปลี่ยนวิธี: ใช้ค่าที่บันทึกไว้ ถ้าไม่มีให้เทียบกับรอบก่อนหน้า
+function reInfo(r){
+  if(r.re_kind) return {kind:r.re_kind, from:r.re_from};
+  const p=prevRounds(r)[0]; if(!p) return {};
+  const a=methodsOf(p), b=methodsOf(r); if(a==="—"||b==="—") return {};
+  return {kind: a===b ? "again" : "switch", from:a};
 }
 const prevHtml = r => prevChain(r).map(c=>`<div class="prevres"><span class="pl">ครั้งที่ ${c.round||"?"}</span>${c.res.map(x=>`<span class="retag ${x.m} ghost">${x.m||"ผล"}</span><b>${esc(x.v)}</b>`).join(" ")}</div>`).join("");
 const prevText = r => prevChain(r).map(c=>`ครั้งที่ ${c.round||"?"}: ${c.res.map(x=>`${x.m?x.m+" ":""}${x.v}`).join(" / ")}`).join(" | ");
