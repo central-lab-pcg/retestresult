@@ -115,6 +115,31 @@ tr.re-wc td.ti{box-shadow:inset 5px 0 0 var(--rewc)}
 tr.re-nir td.ti{box-shadow:inset 5px 0 0 var(--renir)}
 tr.re-both td.ti{box-shadow:inset 5px 0 0 var(--rewc),inset 10px 0 0 var(--renir)}
 td.ti{padding-left:16px}
+/* Re คนละวิธี: พื้นแถวเป็นสีวิธีใหม่ · แถบซ้ายครึ่งบน = สีวิธีเดิม ครึ่งล่าง = สีวิธีใหม่ */
+tr.re-switch.from-wc{--from:var(--rewc)} tr.re-switch.from-nir{--from:var(--renir)}
+tr.re-switch.re-wc{--to:var(--rewc)} tr.re-switch.re-nir{--to:var(--renir)} tr.re-switch.re-both{--to:var(--renir)}
+tr.re-switch td.ti{box-shadow:none;background-image:linear-gradient(var(--from) 0 50%,var(--to) 50% 100%);background-size:7px 100%;background-repeat:no-repeat;background-position:left top;padding-left:18px}
+.prevres{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:4px;padding-top:4px;border-top:1px dashed color-mix(in srgb,var(--muted) 40%,transparent)}
+.prevres .pl{font-size:11.5px}
+.prevres b{color:var(--ink);font-size:14px}
+.retag.ghost{background:transparent!important;border:1.5px solid;font-size:11px;padding:0 6px}
+.retag.ghost.WC{border-color:var(--rewc);color:#6B4FB8} .retag.ghost.NIR{border-color:var(--renir);color:#8A6A00}
+.swtag{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;white-space:nowrap;margin-bottom:3px;color:var(--muted)}
+.swtag b{color:var(--ink);padding:1px 7px;border-radius:20px}
+.swtag b.WC{background:var(--rewc)} .swtag b.NIR{background:var(--renir)}
+.againtag{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:5px;border:1px solid var(--muted);background:var(--panel);color:var(--muted);margin-bottom:3px}
+.rebtn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:2px 7px;cursor:pointer;color:var(--ink);line-height:0}
+.rebtn:hover{border-color:var(--teal);color:var(--teal)}
+.rebtn svg{width:16px;height:16px}
+.remenu{position:fixed;z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px -10px rgba(20,40,70,.35);padding:6px;min-width:230px}
+.remenu .hd{font-size:12px;color:var(--muted);padding:4px 10px 6px}
+.remenu button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:7px;cursor:pointer;font-weight:600}
+.remenu button:hover{background:var(--soft)}
+.remenu button small{font-weight:400;color:var(--muted);margin-left:auto}
+.reagain{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.reagain .lbl{width:100%;font-size:13px;color:var(--muted)}
+.reagain .btn{display:inline-flex;align-items:center;gap:6px}
+.reagain .btn.wc{background:var(--rewc);border-color:var(--rewc)} .reagain .btn.nir{background:var(--renir);border-color:var(--renir)}
 .retag{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:20px;white-space:nowrap;color:var(--ink)}
 .retag.WC{background:var(--rewc)} .retag.NIR{background:var(--renir)}
 .relegend{display:inline-flex;gap:12px;align-items:center;margin-left:6px}
@@ -435,7 +460,7 @@ dialog .db{max-height:70vh}
       </table>
       <div class="empty" id="empty" hidden></div>
     </div>
-    <p class="muted" style="font-size:12.5px;margin:10px 0 30px"><span class="relegend"><span class="retag WC">RE WC</span><span class="retag NIR">RE NIR</span></span> · แสดงเฉพาะงานที่ยังไม่ปิด · งานที่ปิดแล้วดูได้ที่การ์ด “ปิดงาน” · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
+    <p class="muted" style="font-size:12.5px;margin:10px 0 30px"><span class="relegend"><span class="retag WC">RE WC</span><span class="retag NIR">RE NIR</span><span class="swtag"><b class="WC">WC</b> → <b class="NIR">NIR</b></span> = Re คนละวิธี (แถบซ้ายบน = วิธีเดิม · ล่าง = วิธีใหม่)</span> · แสดงเฉพาะงานที่ยังไม่ปิด · งานที่ปิดแล้วดูได้ที่การ์ด “ปิดงาน” · ครั้งที่ของ WC / NIR นับจาก Lab No. เดียวกันตามวัน Re-test</p>
   </section>
 
   <section id="vSummary" hidden>
@@ -528,6 +553,13 @@ dialog .db{max-height:70vh}
           <label class="f full">รายละเอียด / การแก้ไข<textarea name="root_cause" placeholder="เช่น ตัวอย่างจับตัวเป็นก้อน บดใหม่แล้วทดสอบซ้ำได้ผลใกล้เคียง"></textarea></label>
         </div>
       </fieldset>
+      <div class="full labhint" id="prevBox" hidden></div>
+      <div class="full reagain" id="reAgainBox" hidden>
+        <span class="lbl">Re-test อีกรอบ (สร้าง Re-ครั้งถัดไปของ Test item นี้)</span>
+        <button type="button" class="btn" data-reopt="again"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg> Re-อีกครั้ง</button>
+        <button type="button" class="btn wc" data-reopt="WC">Re-WC</button>
+        <button type="button" class="btn nir" data-reopt="NIR">Re-NIR</button>
+      </div>
       <label class="f full" id="noteWrap" hidden>หมายเหตุการเปลี่ยนสถานะ<input name="note" placeholder="บันทึกลงประวัติ"></label>
     </div>
     <div id="histWrap" hidden>
@@ -590,6 +622,12 @@ dialog .db{max-height:70vh}
   <div class="df"><button class="btn primary" id="sheetGo">พิมพ์ใบส่งตัวอย่าง</button><button class="btn" data-close>ไม่ต้อง</button></div>
 </dialog>
 <div class="undobar" id="undoBar" hidden role="status"><span id="undoTxt"></span><button class="btn sm" id="undoGo">↶ เลิกทำ</button><button class="undox" id="undoX" aria-label="ปิด">×</button></div>
+<div class="remenu" id="reMenu" hidden></div>
+<dialog id="dlgRe">
+  <div class="dh"><h2 id="reTitle">Re-test อีกรอบ</h2><span class="grow"></span><button class="btn sm" data-close>ปิด</button></div>
+  <div class="db"><p style="margin:0;line-height:1.9" id="reBody"></p></div>
+  <div class="df"><button class="btn primary" id="reGo">สร้างรายการ Re</button><button class="btn" data-close>ยกเลิก</button></div>
+</dialog>
 <div id="printArea"></div>
 <div class="toast" id="toast" role="status"></div>
 <div class="tip" id="tip"></div>
@@ -824,13 +862,16 @@ function renderList(){
     if(r.status==="check"){ if(checkBtnShown.has(gk(r))) showAdv=false; else checkBtnShown.add(gk(r)); }
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
-    const resHtml = res.length ? res.map(x=>{
+    const reHead = r.re_kind==="switch" ? `<div>${swTag(r.re_from, methodsOf(r))}</div>`
+                 : r.re_kind==="again" ? `<div><span class="againtag" title="Re-test ซ้ำด้วยวิธีเดิม">Re-อีกครั้ง</span></div>` : "";
+    const resHtml = reHead + (res.length ? res.map(x=>{
       return `<div class="mres">${x.m?`<span class="retag ${x.m}">${x.m}${x.round?` Re-ครั้งที่ ${x.round}`:""}</span>`:""}
         <span class="v">${x.v?esc(x.v):'<span class="muted">รอผล</span>'}</span></div>`;
-    }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`;
+    }).join("") : `<span class="muted">${r.status==="check"?"รอเช็คตัวอย่าง":r.status==="lab"?"รอผล…":"ยังไม่ระบุวิธี"}</span>`) + prevHtml(r);
     const rs = n => n>1 ? ` rowspan="${n}"` : "";
     const allPicked = gIds.every(id=>picked.has(id));
-    const reCls = +r.wc && +r.nir ? " re re-both" : +r.wc ? " re re-wc" : +r.nir ? " re re-nir" : "";
+    const reCls = (+r.wc && +r.nir ? " re re-both" : +r.wc ? " re re-wc" : +r.nir ? " re re-nir" : "")
+      + (r.re_kind==="switch" && r.re_from ? ` re-switch from-${r.re_from.includes("NIR")&&!r.re_from.includes("WC")?"nir":"wc"}` : "");
     return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}${reCls}">
       ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>
       <td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
@@ -843,7 +884,7 @@ function renderList(){
       <td><div class="res">${resHtml}</div></td>
       <td><span class="cmp ${esc(r.comparison||"Pending")}">${esc(cmpText(r.comparison))}</span>${r.root_cause_cat?`<div class="rc">${esc(r.root_cause_cat)}</div>`:""}</td>
       <td class="st-${s.k}"><div class="prog"><span class="ticks">${STATUS.map((_,j)=>`<b class="${j<=i?"on":""}"></b>`).join("")}</span><span class="lbl">${s.t}</span></div>${stamp(r)}</td>
-      <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${showAdv?`<button class="adv" data-adv="${r.id}"${r.status==="check"?` title="เช็คทุก Seq / Test item ของ Lab No. ${esc(r.lab_no)} ในคำขอนี้"`:""}>${s.next}</button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
+      <td class="st-${STATUS[Math.min(i+1,3)].k}"><div class="acts">${showAdv?`<button class="adv" data-adv="${r.id}"${r.status==="check"?` title="เช็คทุก Seq / Test item ของ Lab No. ${esc(r.lab_no)} ในคำขอนี้"`:""}>${s.next}</button>`:""}${(r.status==="result"||r.status==="closed")?`<button class="rebtn" data-re="${r.id}" title="Re-test อีกรอบ" aria-label="Re-test อีกรอบ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>`:""}<button class="del" data-del="${r.id}" title="ลบรายการนี้" aria-label="ลบ ${esc(r.lab_no)}">${TRASH}</button></div></td>
     </tr>`;
   }).join("");
 }
@@ -938,6 +979,9 @@ function renderPhases(){
   $("#waitBox").hidden = showTest;
   $("#closeBox").hidden = !(formStatus==="result" || formStatus==="closed" || (editing && editing.root_cause_cat));
   $("#statusPick").hidden = !editing;
+  $("#reAgainBox").hidden = !(editing && (editing.status==="result" || editing.status==="closed"));
+  const ph = editing ? prevHtml(editing) : "";
+  $("#prevBox").hidden = !ph; $("#prevBox").innerHTML = ph ? `<b>ผล Re รอบก่อน</b>${ph}` : "";
   $("#dSaveClose").hidden = !(formStatus==="result" || (formStatus==="closed" && editing && editing.status!=="closed"));
   const w=$("#waitBox");
   if(!editing || formStatus==="check") w.firstChild.textContent = `บันทึกคำขอแล้ว สถานะจะเป็น “เช็คตัวอย่าง” ให้ผู้ส่งตัวอย่าง${$("#form").requester.value?` (${$("#form").requester.value})`:""} ตรวจสอบตัวอย่าง แล้วกด `;
@@ -1230,7 +1274,7 @@ function recordObj(r){
     "WC Re-ครั้งที่": +r.wc ? (r.wc_round||"") : "", "Re-test WC": +r.wc ? (r.wc_result||"") : "",
     "NIR Re-ครั้งที่": +r.nir ? (r.nir_round||"") : "", "Re-test NIR": +r.nir ? (r.nir_result||"") : "",
     "ผลการเปรียบเทียบ": r.comparison ? cmpText(r.comparison) : "", "Root Cause": r.root_cause_cat||"", "Root Cause Detail": r.root_cause||"",
-    "Status": STATUS[SI[r.status]]?.t||r.status, "เช็คโดย": r.checked_by||"",
+    "ผล Re รอบก่อน": prevText(r), "Re แบบ": r.re_kind==="switch" ? `เปลี่ยนวิธี ${r.re_from||""} → ${methodsOf(r)}` : r.re_kind==="again" ? "Re-อีกครั้ง" : "", "Status": STATUS[SI[r.status]]?.t||r.status, "เช็คโดย": r.checked_by||"",
   };
 }
 function sheetFrom(rows){
@@ -1278,7 +1322,7 @@ function exportPDF(){
     <div class="sum">${STATUS.map(s=>`<span>${s.t}: <b>${cnt(s.k)}</b></span>`).join("")}${rc.length?`<span>Root cause: ${rc.map(x=>`${esc(x.k)} <b>${x.v}</b>`).join(", ")}</span>`:""}</div>
     <table><thead><tr><th>Date</th><th>Requested</th><th>Lab No.</th><th>Seq</th><th>Sample</th><th>Receive</th><th>Send Sample</th><th>Test Item</th><th>Original</th><th>Re-test</th><th>ผลเปรียบเทียบ</th><th>Root Cause</th><th>Status</th></tr></thead>
     <tbody>${rows.map((r,i)=>{ const g=spanOf(rows,pdfGroup,i), q=spanOf(rows,pdfSeq,i); return `<tr class="${g?"gs":""}">${g?`<td${RS(g)}>${fmtDate(r.retest_date)}</td><td${RS(g)}>${esc(r.requester)}</td><td${RS(g)}><b>${esc(r.lab_no)}</b></td>`:""}${q?`<td class="c"${RS(q)}>${esc(r.seq||"")}</td><td${RS(q)}>${esc(r.sample_name)}</td><td${RS(q)}>${fmtDate(r.sample_date)}</td><td${RS(q)}>${fmtDate(r.send_date)}</td>`:""}<td>${esc(r.test_item)}</td>
-      <td>${esc(resText(originals(r)))}</td><td>${esc(resText(results(r)))}</td><td>${esc(cmpText(r.comparison))}</td><td>${esc(r.root_cause_cat||"")}${r.root_cause?`<br><small>${esc(r.root_cause)}</small>`:""}</td><td>${STATUS[SI[r.status]]?.t||""}</td></tr>`; }).join("")}</tbody></table>`;
+      <td>${esc(resText(originals(r)))}</td><td>${esc(resText(results(r)))}${prevText(r)?`<br><small>รอบก่อน ${esc(prevText(r))}</small>`:""}</td><td>${esc(cmpText(r.comparison))}</td><td>${esc(r.root_cause_cat||"")}${r.root_cause?`<br><small>${esc(r.root_cause)}</small>`:""}</td><td>${STATUS[SI[r.status]]?.t||""}</td></tr>`; }).join("")}</tbody></table>`;
   doPrint();
 }
 // สำหรับ merge แถวใน PDF: คืนจำนวนแถวที่รวม (0 = แถวนี้ถูกรวมไว้กับแถวบน)
@@ -1326,6 +1370,7 @@ window.addEventListener("afterprint",()=>{ $("#printArea").innerHTML=""; });
 $("#track").addEventListener("click",e=>{ const b=e.target.closest(".stage"); if(!b) return; fStatus = fStatus===b.dataset.s?"":b.dataset.s; renderList(); });
 $("#rows").addEventListener("click",e=>{
   const a=e.target.closest("[data-adv]"); if(a){ e.stopPropagation(); advance(a.dataset.adv); return; }
+  const rb=e.target.closest("[data-re]"); if(rb){ e.stopPropagation(); openReMenu(+rb.dataset.re, rb); return; }
   const d=e.target.closest("[data-del]"); if(d){ e.stopPropagation(); askDelete([+d.dataset.del]); return; }
   const pl=e.target.closest("[data-picklab]"); if(pl){ e.stopPropagation(); const ids=pl.dataset.picklab.split(",").map(Number); ids.forEach(id=> pl.checked?picked.add(id):picked.delete(id)); renderList(); return; }
   if(e.target.closest(".picklab")){ e.stopPropagation(); return; }
@@ -1401,6 +1446,65 @@ $("#delGo").onclick=async()=>{
   }
   if(fail) toast(`ลบแล้ว ${ok} รายการ · ไม่สำเร็จ ${fail} รายการ`);
   loadYear();
+};
+/* ---------- Re-test อีกรอบ */
+// ผลของรอบก่อน ๆ (ไล่ตามลิงก์ prev_id) เพื่อแสดงคู่กับรายการ Re ปัจจุบัน
+function prevChain(r){
+  const out=[]; let pid=r.prev_id, guard=0;
+  while(pid && guard++<10){ const p=yearRows.find(x=>x.id===+pid); if(!p) break;
+    const res=results(p).filter(x=>x.v); if(res.length) out.push({round:p.lab_round, res, date:p.retest_date}); pid=p.prev_id; }
+  return out;
+}
+const prevHtml = r => prevChain(r).map(c=>`<div class="prevres"><span class="pl">ครั้งที่ ${c.round||"?"}</span>${c.res.map(x=>`<span class="retag ${x.m} ghost">${x.m||"ผล"}</span><b>${esc(x.v)}</b>`).join(" ")}</div>`).join("");
+const prevText = r => prevChain(r).map(c=>`ครั้งที่ ${c.round||"?"}: ${c.res.map(x=>`${x.m?x.m+" ":""}${x.v}`).join(" / ")}`).join(" | ");
+const swPart = m => m.split("+").map(x=>`<b class="${x}">${x}</b>`).join("");
+const swTag = (from,to) => `<span class="swtag" title="Re คนละวิธีกับครั้งก่อน">${swPart(from)} → ${swPart(to)}</span>`;
+const methodsOf = r => [+r.wc?"WC":"", +r.nir?"NIR":""].filter(Boolean).join("+") || "—";
+let reTarget=null, reChoice=null;
+function openReMenu(id, anchor){
+  const r=yearRows.find(x=>x.id===id); if(!r) return;
+  const m=$("#reMenu"); const prev=methodsOf(r);
+  m.innerHTML=`<div class="hd">Re-test อีกรอบ · ${esc(r.lab_no)}${r.seq?` Seq ${esc(r.seq)}`:""} · ${esc(r.test_item)} (ครั้งก่อน: ${prev})</div>
+    <button data-reopt="again">↻ Re-อีกครั้ง <small>${prev}</small></button>
+    <button data-reopt="WC"><span class="retag WC">Re-WC</span>${prev==="WC"?"<small>วิธีเดิม</small>":"<small>เปลี่ยนวิธี</small>"}</button>
+    <button data-reopt="NIR"><span class="retag NIR">Re-NIR</span>${prev==="NIR"?"<small>วิธีเดิม</small>":"<small>เปลี่ยนวิธี</small>"}</button>`;
+  m.dataset.id=id; m.hidden=false;
+  const b=anchor.getBoundingClientRect(); const w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(8, Math.min(b.right-w, innerWidth-w-8))+"px";
+  m.style.top=(b.bottom+h+8>innerHeight ? b.top-h-6 : b.bottom+6)+"px";
+}
+document.addEventListener("click",e=>{ const m=$("#reMenu"); if(!m.hidden && !e.target.closest("#reMenu,[data-re]")) m.hidden=true; });
+$("#reMenu").addEventListener("click",e=>{ const b=e.target.closest("[data-reopt]"); if(!b) return; $("#reMenu").hidden=true; askReAgain(+$("#reMenu").dataset.id, b.dataset.reopt); });
+$("#reAgainBox").addEventListener("click",e=>{ const b=e.target.closest("[data-reopt]"); if(b && editing) askReAgain(editing.id, b.dataset.reopt); });
+function askReAgain(id, opt){
+  const r=yearRows.find(x=>x.id===id); if(!r) return;
+  const prev=methodsOf(r);
+  const wc = opt==="again" ? +r.wc : opt==="WC" ? 1 : 0;
+  const nir= opt==="again" ? +r.nir : opt==="NIR" ? 1 : 0;
+  const now=[wc?"WC":"", nir?"NIR":""].filter(Boolean).join("+") || "—";
+  const kind = now===prev ? "again" : "switch";
+  reTarget=r; reChoice={wc, nir, kind, from:prev, now};
+  const next=(r.lab_total||1)+1;
+  $("#reTitle").textContent = kind==="again" ? "Re-อีกครั้ง (วิธีเดิม)" : `Re คนละวิธี: ${prev} → ${now}`;
+  $("#reBody").innerHTML = `สร้าง <b>Re-ครั้งที่ ${next}</b> ของ <b>Lab No. ${esc(r.lab_no)}${r.seq?` · Seq ${esc(r.seq)}`:""} · ${esc(r.test_item)}</b> (${esc(r.sample_name||"")})<br>
+    วิธี: <span class="retag ${now.includes("WC")?"WC":"NIR"}">${now}</span>${kind==="switch"?` ${swTag(prev,now)}`:""}<br>
+    <span class="muted">รายการใหม่จะเริ่มที่สถานะ “เช็คตัวอย่าง” · รายการเดิมยังอยู่ครบพร้อมผลเดิม</span>`;
+  $("#dlgRe").showModal();
+}
+$("#reGo").onclick=async()=>{
+  const r=reTarget, c=reChoice; if(!r||!c) return;
+  const t=todayISO(); $("#reGo").disabled=true;
+  try{
+    await api("/retests",{method:"POST",body:JSON.stringify({
+      retest_date:t, requester:r.requester, lab_no:r.lab_no, seq:r.seq, sample_name:r.sample_name, sample_date:r.sample_date, test_item:r.test_item, remark:r.remark,
+      orig_wc:r.orig_wc, orig_wc_result:r.orig_wc_result, orig_nir:r.orig_nir, orig_nir_result:r.orig_nir_result, original_result:r.original_result,
+      wc:c.wc, nir:c.nir, status:"check", comparison:"Pending", prev_id:r.id, re_kind:c.kind, re_from:c.from })});
+    $("#dlgRe").close(); if(editing) closeDrawer();
+    const ty=+t.slice(0,4), tm=+t.slice(5,7); if(ty!==year||tm!==month){ year=ty; month=tm; }
+    fStatus=""; toast(c.kind==="again" ? `สร้าง Re-อีกครั้งแล้ว · ${r.lab_no} ${r.test_item}` : `สร้าง Re ${c.from} → ${c.now} แล้ว · ${r.lab_no} ${r.test_item}`);
+    loadYear();
+  }catch(e){ toast(e.message); }
+  finally{ $("#reGo").disabled=false; }
 };
 /* ---------- เลิกทำการลบ (Undo) */
 let undoInfo=null, undoTimer=null;
