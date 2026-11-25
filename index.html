@@ -144,6 +144,10 @@ tr.re-switch td.ti{box-shadow:none;background-image:linear-gradient(var(--from) 
 .retag.WC{background:var(--rewc)} .retag.NIR{background:var(--renir)}
 .relegend{display:inline-flex;gap:12px;align-items:center;margin-left:6px}
 .rechips{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--muted)}
+.rechips .req{color:var(--ink);font-weight:600}
+.rechips.need{border-radius:8px;outline:2px solid var(--bad);outline-offset:3px;animation:needpulse .9s ease 2}
+@keyframes needpulse{50%{outline-color:transparent}}
+@media (prefers-reduced-motion:reduce){.rechips.need{animation:none}}
 .rechip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1.5px solid var(--line);cursor:pointer;font-weight:700;color:var(--ink);font-size:13.5px;background:var(--panel)}
 .rechip input{width:16px;height:16px;margin:0}
 .rechip.wc input{accent-color:#8E6BD8} .rechip.nir input{accent-color:#C9A21E}
@@ -498,7 +502,7 @@ dialog .db{max-height:70vh}
       </div>
       <div class="full labhint" id="labHint"></div>
       <label class="f full">Remark / เหตุผลที่ขอ Re-test<input name="remark"></label>
-      <label class="f">Requested (ผู้ส่งตัวอย่าง)<select name="requester"></select></label>
+      <label class="f">Requested (ผู้ขอ Re-Testing)<select name="requester"></select></label>
       <label class="f sent-only">Send Sample Date<input type="date" name="send_date"></label>
       <fieldset class="full methods single-only">
         <legend>Original result — ติ๊กวิธีของผลเดิม แล้วระบุค่า</legend>
@@ -977,7 +981,7 @@ function renderPhases(){
   $("#reBox").hidden = !editing || !showTest;
   $("#reBox").classList.toggle("novals", !showTest);
   $("#reLegend").textContent = showTest ? "ผล Re-test — ติ๊กวิธีที่ทดสอบ แล้วระบุค่า" : "Re-test ด้วยวิธี (กรอกค่าผลเมื่อได้ผลแล้ว)";
-  $("#waitBox").hidden = showTest;
+  $("#waitBox").hidden = showTest || !editing || formStatus==="check";   // ไม่แสดงข้อความแนะนำตอนเพิ่มรายการ/เช็คตัวอย่าง
   $("#closeBox").hidden = !(formStatus==="result" || formStatus==="closed" || (editing && editing.root_cause_cat));
   $("#statusPick").hidden = !editing;
   $("#reAgainBox").hidden = !(editing && (editing.status==="result" || editing.status==="closed"));
@@ -985,7 +989,7 @@ function renderPhases(){
   $("#prevBox").hidden = !ph; $("#prevBox").innerHTML = ph ? `<b>ผล Re รอบก่อน</b>${ph}` : "";
   $("#dSaveClose").hidden = !(formStatus==="result" || (formStatus==="closed" && editing && editing.status!=="closed"));
   const w=$("#waitBox");
-  if(!editing || formStatus==="check") w.firstChild.textContent = `บันทึกคำขอแล้ว สถานะจะเป็น “เช็คตัวอย่าง” ให้ผู้ส่งตัวอย่าง${$("#form").requester.value?` (${$("#form").requester.value})`:""} ตรวจสอบตัวอย่าง แล้วกด `;
+  if(!editing || formStatus==="check") w.firstChild.textContent = `บันทึกคำขอแล้ว สถานะจะเป็น “เช็คตัวอย่าง” ให้ตรวจสอบตัวอย่าง แล้วกด `;
   else w.firstChild.textContent = "ตัวอย่างอยู่ในห้องปฏิบัติการ เมื่อได้ผลแล้ว กด ";
   $("#waitBtn").textContent = (!editing || formStatus==="check") ? "“เช็คตัวอย่างแล้ว”" : "“กรอกผล Re-test”";
 }
@@ -1080,6 +1084,7 @@ async function save(){
   if(!editing) return saveNew();
   if(!f.lab_no.value.trim()||!f.test_item.value.trim()){ toast("กรุณากรอก Lab No. และ Test item"); return; }
   if(!f.sample_name.value.trim()){ toast("กรุณากรอก Sample name"); f.sample_name.focus(); return; }
+  if(!f.wc.checked && !f.nir.checked){ toast("ติ๊ก RE WC หรือ RE NIR ก่อนบันทึก"); flagRe(seqGroups()[0]); return; }
   const data={}; for(const el of f.elements) if(el.name) data[el.name] = el.type==="checkbox" ? (el.checked?1:0) : el.value;
   data.status = formStatus;
   const done = formStatus==="result"||formStatus==="closed";
@@ -1096,7 +1101,7 @@ async function save(){
         wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(), nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim(),
         rwc:r.querySelector(".rwc").checked, rnir:r.querySelector(".rnir").checked })) }));
     const used=gs.filter(x=>x.g.dataset.existing || x.rows.some(r=>r.name) || x.name);
-    if(used.some(x=>!x.seq)){ toast("กรุณาใส่เลข Seq ให้ครบทุกตัวอย่าง"); return; }
+    const noSeq=used.find(x=>!x.seq); if(noSeq){ toast("กรุณากรอก Seq ให้ครบทุกตัวอย่าง"); noSeq.g.querySelector(".sseq").focus(); return; }
     const dupSeq=used.map(x=>x.seq).find((k,i,a)=>a.indexOf(k)!==i); if(dupSeq){ toast(`Seq ${dupSeq} ซ้ำกัน`); return; }
     for(const gr of used){
       if(!gr.name){ toast(`Seq ${gr.seq}: กรุณากรอก Sample name`); gr.g.querySelector(".sname").focus(); return; }
@@ -1104,6 +1109,7 @@ async function save(){
       if(!named.length){ toast(`Seq ${gr.seq}: กรอก Test item อย่างน้อย 1 รายการ`); return; }
       const d=named.map(r=>labKey(r.name)).find((k,i,a)=>a.indexOf(k)!==i); if(d){ toast(`Seq ${gr.seq}: Test item “${d}” ซ้ำกัน`); return; }
       const m=named.find(r=>!r.existing && ((r.wc&&!r.wcv)||(r.nir&&!r.nirv))); if(m){ toast(`Seq ${gr.seq} · ${m.name}: ติ๊ก WC/NIR แล้ว ต้องระบุค่า Original`); return; }
+      const nr=named.find(r=>!r.rwc && !r.rnir); if(nr){ toast(`Seq ${gr.seq} · ${nr.name}: ติ๊ก RE WC หรือ RE NIR ก่อนบันทึก`); flagRe(gr.g, nr.name); return; }
       named.filter(r=>!r.existing).forEach(r=>extras.push({ seq:gr.seq, sample_name:gr.name, sample_date:gr.recv, test_item:r.name,
         orig_wc:r.wc?1:0, orig_wc_result:r.wcv, orig_nir:r.nir?1:0, orig_nir_result:r.nirv, wc:r.rwc?1:0, nir:r.rnir?1:0 }));
     }
@@ -1172,6 +1178,13 @@ function syncEditGroup(){
 }
 $("#seqGroups").addEventListener("input", ()=>setTimeout(syncEditGroup));
 $("#seqGroups").addEventListener("change", ()=>setTimeout(syncEditGroup));
+// ไฮไลต์ปุ่ม RE ที่ยังไม่ได้ติ๊ก
+function flagRe(g, name){
+  if(!g) return;
+  const rows=[...g.querySelectorAll(".irow")]; const row=rows.find(r=>!name || r.querySelector(".iname").value.trim()===name) || rows[0];
+  const box=row?.querySelector(".rechips"); if(!box) return;
+  box.classList.remove("need"); void box.offsetWidth; box.classList.add("need"); box.scrollIntoView({block:"center",behavior:"smooth"});
+}
 function seqGroups(){ return [...document.querySelectorAll("#seqGroups .sgrp")]; }
 function addSeqGroup(){
   const used=seqGroups().map(g=>parseInt(g.querySelector(".sseq").value)||0);
@@ -1182,7 +1195,7 @@ function addSeqGroup(){
   g.innerHTML=`${first?"":`<button type="button" class="del srm" title="เอาตัวอย่างนี้ออก" aria-label="เอาตัวอย่างนี้ออก">${TRASH}</button>`}
     <div class="sg2">
       <label><span class="req">Lab No.</span><input class="slab" value="${esc(lab)}" ${first?'placeholder="เช่น 9988"':'readonly title="ใช้ Lab No. เดียวกับตัวอย่างแรก"'}></label>
-      <label>Seq<input class="sseq" inputmode="numeric" value="${next}"></label>
+      <label><span class="req">Seq</span><input class="sseq" inputmode="numeric" placeholder="เช่น ${next}"></label>
       <div class="sleft"><label><span class="req">Sample name</span><input class="sname" placeholder="เช่น YC"></label>
         <label>Receive date<input class="srecv" type="date" value="${esc(prevRecv)}"></label></div>
       <div class="sval"><span class="vl"><span class="req">ค่าวิเคราะห์ (Test item + Original)</span></span><div class="sitems"></div>
@@ -1195,7 +1208,7 @@ function addItemRow(g, name=""){
   d.innerHTML=`<div class="ihead"><input class="iname" list="itemList" placeholder="Test item เช่น CP" value="${esc(name)}"><span class="iround"></span><button type="button" class="del irm" title="เอา Test item นี้ออก" aria-label="เอาออก">${TRASH}</button></div>
     <div class="mrow"><label class="ck"><input type="checkbox" class="iwc"> WC</label><input class="val iwcv" inputmode="decimal" placeholder="ค่า Original WC" disabled></div>
     <div class="mrow"><label class="ck"><input type="checkbox" class="inir"> NIR</label><input class="val inirv" inputmode="decimal" placeholder="ค่า Original NIR" disabled></div>
-    <div class="rechips">Re-test ด้วย <label class="rechip wc"><input type="checkbox" class="rwc"> RE WC</label><label class="rechip nir"><input type="checkbox" class="rnir"> RE NIR</label></div>`;
+    <div class="rechips"><span class="req">Re-test ด้วย</span> <label class="rechip wc"><input type="checkbox" class="rwc"> RE WC</label><label class="rechip nir"><input type="checkbox" class="rnir"> RE NIR</label></div>`;
   g.querySelector(".sitems").appendChild(d); updItemRounds(); return d;
 }
 function updItemRounds(){
@@ -1233,13 +1246,14 @@ async function saveNew(){
       wc:r.querySelector(".iwc").checked, wcv:r.querySelector(".iwcv").value.trim(),
       nir:r.querySelector(".inir").checked, nirv:r.querySelector(".inirv").value.trim(),
       rwc:r.querySelector(".rwc").checked, rnir:r.querySelector(".rnir").checked })).filter(x=>x.name) }));
-  if(groups.some(x=>!x.seq)){ toast("กรุณาใส่เลข Seq ให้ครบทุกตัวอย่าง"); return; }
+  const noSeq=groups.find(x=>!x.seq); if(noSeq){ toast("กรุณากรอก Seq ให้ครบทุกตัวอย่าง"); noSeq.g.querySelector(".sseq").focus(); return; }
   const noName=groups.find(x=>!x.name); if(noName){ toast(`Seq ${noName.seq}: กรุณากรอก Sample name`); noName.g.querySelector(".sname").focus(); return; }
   const dupSeq=groups.map(x=>x.seq).find((k,i,a)=>a.indexOf(k)!==i); if(dupSeq){ toast(`Seq ${dupSeq} ซ้ำกัน`); return; }
   const empty=groups.find(x=>!x.items.length); if(empty){ toast(`Seq ${empty.seq}: กรอก Test item อย่างน้อย 1 รายการ`); empty.g.querySelector(".iname")?.focus(); return; }
   for(const gr of groups){
     const d=gr.items.map(x=>labKey(x.name)).find((k,i,a)=>a.indexOf(k)!==i); if(d){ toast(`Seq ${gr.seq}: Test item “${d}” ซ้ำกัน`); return; }
     const m=gr.items.find(x=>(x.wc&&!x.wcv)||(x.nir&&!x.nirv)); if(m){ toast(`Seq ${gr.seq} · ${m.name}: ติ๊ก WC/NIR แล้ว ต้องระบุค่า Original`); return; }
+    const nr=gr.items.find(x=>!x.rwc && !x.rnir); if(nr){ toast(`Seq ${gr.seq} · ${nr.name}: ติ๊ก RE WC หรือ RE NIR ก่อนบันทึก`); flagRe(gr.g, nr.name); return; }
   }
   const base={retest_date:f.retest_date.value, requester:f.requester.value, lab_no:f.lab_no.value.trim(), remark:f.remark.value, status:"check", comparison:"Pending"};
   const b=$("#dSave"); b.disabled=true;
