@@ -854,16 +854,22 @@ function renderList(){
   $("#empty").hidden = true;
   setTimeout(updSel);
   // รวมแถว (merge) ที่เป็นคำขอเดียวกัน: Lab No. + Date + Requested และรวม Seq เดียวกัน
-  const gk = r => `${labKey(r.lab_no)}|${r.eff_date}|${r.requester||""}`;
+  // รวมแถวตาม Lab No. (แม้ Re-test คนละวัน) · เรียงกลุ่มตามวันล่าสุด แล้วเรียง Seq → Test item → Re-ครั้งที่
+  const latest={}; list.forEach(r=>{ const k=labKey(r.lab_no); if(!(k in latest) || (r.eff_date||"")>latest[k]) latest[k]=r.eff_date||""; });
+  list.sort((a,b)=>(latest[labKey(b.lab_no)]||"").localeCompare(latest[labKey(a.lab_no)]||"") || labKey(a.lab_no).localeCompare(labKey(b.lab_no))
+    || ((parseInt(a.seq)||0)-(parseInt(b.seq)||0)) || String(a.seq??"").localeCompare(String(b.seq??""))
+    || labKey(a.test_item).localeCompare(labKey(b.test_item)) || ((a.lab_round||0)-(b.lab_round||0)) || a.id-b.id);
+  const gk = r => labKey(r.lab_no);
+  const dk = r => `${gk(r)}|${r.eff_date}|${r.requester||""}`;
   const sk = r => `${gk(r)}|${r.seq??""}|${r.sample_name||""}|${r.sample_date||""}`;
   const span=(arr,key,i)=>{ if(i>0 && key(arr[i-1])===key(arr[i])) return 0; let n=1; while(i+n<arr.length && key(arr[i+n])===key(arr[i])) n++; return n; };
   const checkBtnShown=new Set();
   $("#rows").innerHTML = list.map((r,idx)=>{
-    const gSpan=span(list,gk,idx), sSpan=span(list,sk,idx);
+    const gSpan=span(list,gk,idx), dSpan=span(list,dk,idx), sSpan=span(list,sk,idx);
     const gIds=list.filter(x=>gk(x)===gk(r)).map(x=>x.id);
     const i = SI[r.status] ?? 0, s = STATUS[i];
     let showAdv = !!s.next;
-    if(r.status==="check"){ if(checkBtnShown.has(gk(r))) showAdv=false; else checkBtnShown.add(gk(r)); }
+    if(r.status==="check"){ if(checkBtnShown.has(dk(r))) showAdv=false; else checkBtnShown.add(dk(r)); }
     const age = r.status!=="closed" ? daysSince(r.eff_date) : null;
     const res = results(r);
     const ri = reInfo(r);
@@ -878,10 +884,10 @@ function renderList(){
     const reCls = (+r.wc && +r.nir ? " re re-both" : +r.wc ? " re re-wc" : +r.nir ? " re re-nir" : "")
       + (ri.kind==="switch" && ri.from ? ` re-switch from-${ri.from.includes("NIR")&&!ri.from.includes("WC")?"nir":"wc"}` : "");
     return `<tr data-id="${r.id}" class="${allPicked?"picked":""}${gSpan?" gstart":""}${reCls}">
-      ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>
-      <td class="mg"${rs(gSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
-      <td class="mg"${rs(gSpan)}>${esc(r.requester)}</td>
-      <td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<span class="round">${gSpan} รายการ</span>`:""}</td>`:""}
+      ${gSpan?`<td class="sel mg"${rs(gSpan)}><input type="checkbox" data-picklab="${gIds.join(",")}" ${allPicked?"checked":""} aria-label="เลือก Lab No. ${esc(r.lab_no)}"></td>`:""}
+      ${dSpan?`<td class="mg"${rs(dSpan)}>${fmtDate(r.retest_date)}${filterActive() && (r.eff_date||"").slice(0,7)!==ym(year,month)?`<div class="sm-note">ชีต ${MONTHS[+(r.eff_date||"").slice(5,7)-1]||"?"}</div>`:""}${age!==null&&age>=0?`<div class="age ${age>=cfg.late?"late":""}">ค้าง ${age} วัน</div>`:""}</td>
+      <td class="mg"${rs(dSpan)}>${esc(r.requester)}</td>`:""}
+      ${gSpan?`<td class="lab mg"${rs(gSpan)}>${esc(r.lab_no)}${gSpan>1?`<span class="round">${gSpan} รายการ</span>`:""}</td>`:""}
       ${sSpan?`<td class="mg"${rs(sSpan)}>${r.seq?`<b>${esc(r.seq)}</b>`:'<span class="muted">—</span>'}</td>
       <td class="mg"${rs(sSpan)}>${esc(r.sample_name)}${r.sample_date?`<div class="sm-note">Receive ${fmtDate(r.sample_date)}</div>`:""}</td>`:""}
       <td class="ti">${esc(r.test_item)}${r.lab_total>1?`<span class="round">Re-ครั้งที่ ${r.lab_round} จาก ${r.lab_total}</span>`:""}</td>
